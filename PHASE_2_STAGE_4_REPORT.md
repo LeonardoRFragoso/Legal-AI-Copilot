@@ -4,7 +4,7 @@
 
 **Date**: 2026-07-24
 **Status**: Complete
-**Tests**: 149 passed + 22 new tests = 171 total (9 pre-existing failures unrelated to Stage 4)
+**Tests at Stage 4**: 149 passed + 22 new tests = 171 total (9 failures, later fixed in Stage 5)
 
 ---
 

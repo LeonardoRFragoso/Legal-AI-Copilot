@@ -187,15 +187,8 @@ def can_review(user: User, record: AnalysisRecord) -> bool:
     if user.role == UserRole.ADMIN:
         return True
     if user.role == UserRole.LAWYER:
-        return record.user_id == user.id or _has_document_access(user, record.document_id)
+        return record.user_id == user.id
     return False
-
-
-def _has_document_access(user: User, document_id: str) -> bool:
-    """Check if user owns the document. Called within a session context."""
-    from app.models import Document
-    # This is a lightweight check; the caller should have a db session
-    return True  # Ownership is checked at the endpoint level via document access
 
 
 def create_review(

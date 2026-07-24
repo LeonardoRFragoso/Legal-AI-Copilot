@@ -1,0 +1,73 @@
+CONTRATO DE PRESTAÇÃO DE SERVIÇOS — DOCUMENTO FICTÍCIO
+
+AVISO: Documento fictício criado exclusivamente para demonstração técnica.
+Não usar dados reais de pessoas ou empresas.
+
+---
+
+CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+
+Pelo presente instrumento particular, de um lado:
+
+CONTRATANTE: Empresa Fictícia LTDA, pessoa jurídica de direito privado,
+inscrita no CNPJ sob o número 00.000.000/0001-00, com sede na Rua Fictícia,
+nº 100, Cidade Fictícia — UF, doravante denominada simplesmente CONTRATANTE;
+
+E de outro lado:
+
+CONTRATADA: Tech Fictícia Solutions S.A., pessoa jurídica de direito privado,
+inscrita no CNPJ sob o número 11.111.111/0001-11, com sede na Avenida Fictícia,
+nº 200, Cidade Fictícia — UF, doravante denominada simplesmente CONTRATADA.
+
+As partes acima qualificadas celebram o presente Contrato de Prestação
+de Serviços, que se regerá pelas cláusulas a seguir:
+
+CLÁUSULA 1ª — OBJETO
+A CONTRATADA prestará à CONTRATANTE serviços de desenvolvimento de software
+sob demanda, incluindo análise, design, implementação, testes e manutenção
+de sistemas de informação.
+
+CLÁUSULA 2ª — DURAÇÃO
+O presente contrato vigorará por prazo indeterminado, podendo ser rescindido
+a qualquer tempo por qualquer das partes.
+
+CLÁUSULA 3ª — PAGAMENTO
+A CONTRATANTE pagará à CONTRATADA pelos serviços prestados valores
+estabelecidos em ordens de serviço específicas. O pagamento será realizado
+mensalmente, mediante apresentação de nota fiscal.
+
+CLÁUSULA 4ª — MULTA
+Em caso de descumprimento de qualquer cláusula deste contrato, a parte
+infratora sujeitar-se-á a multa ilimitada, sem teto máximo, a ser
+apurada conforme critério exclusivo da parte prejudicada.
+
+CLÁUSULA 5ª — RENOVAÇÃO AUTOMÁTICA
+O presente contrato será renovado automaticamente por períodos sucessivos
+de 12 (doze) meses, sem necessidade de notificação prévia, persistindo
+todos os termos e condições originalmente pactuados.
+
+CLÁUSULA 6ª — PAGAMENTO INDEFINIDO
+Os pagamentos devidos pela CONTRATANTE à CONTRATADA continuarão
+indefinidamente, ainda que o contrato seja rescindido, até que todos
+os serviços em andamento sejam concluídos, sem prazo definido para
+tal conclusão.
+
+CLÁUSULA 7ª — FORO
+Fica eleito o foro da Comarca da Cidade Fictícia — UF, para dirimir
+quaisquer controvérsias decorrentes do presente contrato.
+
+CLÁUSULA 8ª — RESCISÃO
+A rescisão do contrato não exime as partes das obrigações já
+contraídas até a data da rescisão.
+
+---
+
+Este contrato não contém:
+- Cláusula de confidencialidade / non-disclosure (NDA)
+- Cláusula de conformidade com a LGPD (Lei Geral de Proteção de Dados)
+- Cláusula de propriedade intelectual
+- Cláusula de SLA (Service Level Agreement)
+- Cláusula de limitação de responsabilidade
+
+Estas ausências são intencionais para fins de demonstração da análise
+de riscos automatizada.

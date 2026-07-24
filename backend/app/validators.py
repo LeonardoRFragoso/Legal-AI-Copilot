@@ -22,13 +22,13 @@ class ResponseValidator:
             elif not isinstance(data[field], list):
                 errors.append(f"Field {field} must be a list")
         
-        if data.get("parties") and len(data["parties"]) == 0:
+        if "parties" in data and isinstance(data["parties"], list) and len(data["parties"]) == 0:
             warnings.append("No parties identified - may indicate extraction failure")
         
-        if data.get("dates") and len(data["dates"]) == 0:
+        if "dates" in data and isinstance(data["dates"], list) and len(data["dates"]) == 0:
             warnings.append("No dates identified - may indicate extraction failure")
         
-        if data.get("values") and len(data["values"]) == 0:
+        if "values" in data and isinstance(data["values"], list) and len(data["values"]) == 0:
             warnings.append("No values identified - may indicate extraction failure")
         
         return {
@@ -47,7 +47,9 @@ class ResponseValidator:
         if not summary or len(summary.strip()) == 0:
             errors.append("Summary is empty")
         
-        if len(summary) < 50:
+        if len(summary) < 10:
+            errors.append("Summary is too short to be meaningful")
+        elif len(summary) < 50:
             warnings.append("Summary is too short - may be incomplete")
         
         if len(summary) > 5000:
@@ -102,12 +104,17 @@ class ResponseValidator:
             "não sei": 0.1,
         }
         
-        confidence_score = 0.5
+        response_lower = response.lower()
+        matched_scores = []
         for indicator, score in confidence_indicators.items():
-            if indicator.lower() in response.lower():
-                confidence_score = score
-                break
-        
+            if indicator.lower() in response_lower:
+                matched_scores.append(score)
+
+        if matched_scores:
+            confidence_score = min(matched_scores)
+        else:
+            confidence_score = 0.5
+
         is_confident = confidence_score >= min_confidence
         
         return {

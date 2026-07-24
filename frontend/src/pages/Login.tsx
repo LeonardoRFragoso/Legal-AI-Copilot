@@ -6,6 +6,8 @@ import Input from '../components/ui/Input'
 import { useAuthStore } from '../store/authStore'
 import { Scale, AlertCircle } from 'lucide-react'
 
+const demoMode = import.meta.env.VITE_DEMO_MODE === 'true' || import.meta.env.DEV
+
 export default function Login() {
   const navigate = useNavigate()
   const { login, loading } = useAuthStore()
@@ -76,6 +78,7 @@ export default function Login() {
             </Button>
           </form>
 
+          {demoMode && (
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-xs text-gray-500 mb-3 font-medium">Credenciais de demonstração:</p>
             <div className="space-y-2">
@@ -105,6 +108,7 @@ export default function Login() {
               </button>
             </div>
           </div>
+          )}
         </Card>
       </div>
     </div>

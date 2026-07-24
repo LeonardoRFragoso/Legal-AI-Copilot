@@ -89,7 +89,7 @@
 - Auth: JWT creation, validation, expiration, RBAC
 - Agent Router: Intent classification, tool selection
 - Agent Chat Integration: End-to-end chat flow with mocked LLM
-- Risk Analysis: Heuristic analysis, severity classification
+- Risk Analysis: Heuristic keyword-based analysis, severity classification
 - AI Validator: Guardrails, confidence scoring, citation validation
 - Automation: Pipeline execution, webhook delivery, retry logic
 - Config: Environment validation, secret key enforcement
@@ -104,7 +104,8 @@
 
 1. **No automatic regeneration**: Versioning is structural only. Manual creation of new versions.
 2. **No frontend tests**: No test framework configured for frontend. Validated via TypeScript build.
-3. **test_api.py failures**: Pre-existing tests don't send auth headers. Not related to Stage 4.
-4. **test_validators.py failures**: Pre-existing assertion issues. Not related to Stage 4.
-5. **SQLite**: Adequate for MVP. PostgreSQL recommended for production.
-6. **No refresh token auto-refresh**: Frontend redirects to login on 401. No silent refresh.
+3. **Risk analysis is heuristic-only**: No LLM or semantic embedding-based retrieval (RAG). Uses keyword matching.
+4. **SQLite**: Adequate for MVP. PostgreSQL recommended for production.
+5. **No refresh token auto-refresh**: Frontend redirects to login on 401. No silent refresh.
+6. **AIValidator imported but unused in risk analysis**: The validator is available but not called in the risk analysis flow.
+7. **Citation similarity_score is fixed**: The value 0.7 is hardcoded, not computed from semantic similarity.

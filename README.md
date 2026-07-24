@@ -1,147 +1,184 @@
-# Legal AI Copilot - MVP
+# Legal AI Copilot — MVP
 
-Sistema de IA para análise de contratos jurídicos utilizando RAG.
+Sistema de IA para análise de contratos jurídicos com revisão humana, guardrails, e métricas de produtividade.
 
 ## Stack
 
-- **Backend**: FastAPI, Python 3.12, LangChain, OpenAI GPT-4o
-- **Frontend**: React, TypeScript, Vite, TailwindCSS
+- **Backend**: FastAPI, Python 3.12, SQLAlchemy, Alembic
+- **Frontend**: React, TypeScript, Vite, TailwindCSS, Zustand
 - **Banco**: SQLite (para MVP sem Docker)
-- **IA**: OpenAI GPT-4o, text-embedding-3-small
-- **Framework**: LangChain
+- **IA**: OpenAI GPT-4 (opcional — modo heurístico sem API key)
+- **Auth**: JWT (access + refresh tokens), Argon2 password hashing
+- **RBAC**: ADMIN, LAWYER, ASSISTANT, CLIENT, VIEWER
 
 ## Funcionalidades
 
-- ✅ Upload de contratos PDF
-- ✅ Extração de texto e chunking
-- ✅ Geração de embeddings (OpenAI)
-- ✅ Chat com RAG e citações
-- ✅ Resumo de contratos
-- ✅ Extração de informações estruturadas (partes, datas, valores, cláusulas)
-- ✅ Comparação entre contratos
-- ✅ Legal Agent com Tools integradas
+- Upload de contratos PDF com extração de texto e chunking
+- Agent Router determinístico para classificação de intenção
+- Resumo, extração de informações, comparação e análise de riscos
+- Análise de riscos heurística (palavras-chave) com severidade e categorias
+- Guardrails com validação de confiança e disclaimer jurídico
+- Chat com roteamento de agente e persistência de contexto
+- Automação pós-upload com webhook (n8n)
+- Revisão humana com state machine e histórico append-only
+- Métricas de impacto com estimativas de tempo economizado
+- Autenticação JWT com RBAC e proteção de rotas no frontend
 
-## Setup Rápido
-
-### Pré-requisitos
+## Requisitos
 
 - Python 3.12+
 - Node.js 18+
-- OpenAI API Key
+- OpenAI API Key (opcional — modo heurístico funciona sem ela)
 
-### 1. Configurar Backend
+## Configuração
+
+### Variáveis de Ambiente (Backend)
+
+| Variável | Padrão | Descrição |
+|----------|---------|-----------|
+| `ENVIRONMENT` | development | Ambiente (development, testing, production) |
+| `SECRET_KEY` | (auto-gerado em dev) | Chave JWT — obrigatório em produção |
+| `OPENAI_API_KEY` | (vazio) | API key OpenAI — opcional |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | 30 | Expiração do access token |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | 7 | Expiração do refresh token |
+| `AUTOMATION_WEBHOOK_ENABLED` | false | Habilita webhook de automação |
+| `AUTOMATION_WEBHOOK_URL` | (vazio) | URL do webhook (n8n) |
+| `ESTIMATED_MANUAL_SUMMARY_MINUTES` | 30 | Tempo manual estimado para resumo |
+| `ESTIMATED_MANUAL_EXTRACTION_MINUTES` | 45 | Tempo manual estimado para extração |
+| `ESTIMATED_MANUAL_COMPARISON_MINUTES` | 90 | Tempo manual estimado para comparação |
+| `ESTIMATED_MANUAL_QA_MINUTES` | 15 | Tempo manual estimado para Q&A |
+| `ESTIMATED_MANUAL_RISK_ANALYSIS_MINUTES` | 120 | Tempo manual estimado para análise de riscos |
+
+### Variáveis de Ambiente (Frontend)
+
+| Variável | Padrão | Descrição |
+|----------|---------|-----------|
+| `VITE_API_URL` | http://localhost:8000 | URL do backend |
+| `VITE_DEMO_MODE` | true | Mostra credenciais demo na tela de login |
+
+## Instalação
+
+### Backend
 
 ```bash
 cd backend
-
-# Criar virtual environment
 python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# ou venv\Scripts\activate  # Windows
-
-# Instalar dependências
+source venv/bin/activate
 pip install -r requirements.txt
-
-# Configurar API Key
-cp .env.example .env
-# Editar .env e adicionar: OPENAI_API_KEY=sk-sua-chave-aqui
-
-# Iniciar servidor
-uvicorn app.main:app --reload
+cp .env.example .env  # editar conforme necessário
 ```
 
-Backend estará rodando em: http://localhost:8000
-API Docs: http://localhost:8000/docs
+### Migrations
 
-### 2. Configurar Frontend
+```bash
+cd backend
+alembic upgrade head
+```
+
+### Seed (Usuários Demo)
+
+```bash
+cd backend
+ENVIRONMENT=development python -m app.seed
+```
+
+Cria:
+- **LAWYER**: lawyer@demo.com / demo123456
+- **ADMIN**: admin@demo.com / admin123456
+
+### Frontend
 
 ```bash
 cd frontend
-
-# Instalar dependências
 npm install
+cp .env.example .env  # editar conforme necessário
+```
 
-# Configurar API URL
-cp .env.example .env
-# Editar .env se necessário (padrão: http://localhost:8000)
+## Execução
 
-# Iniciar servidor
+```bash
+# Terminal 1 — Backend
+cd backend
+source venv/bin/activate
+uvicorn app.main:app --reload
+
+# Terminal 2 — Frontend
+cd frontend
 npm run dev
 ```
 
-Frontend estará rodando em: http://localhost:3000 (ou porta disponível)
+Backend: http://localhost:8000
+Frontend: http://localhost:5173
 
-## Estrutura do Projeto
+## Quick Demo
 
-```
-.
-├── backend/
-│   ├── app/
-│   │   ├── main.py              # Entry point FastAPI
-│   │   ├── config.py            # Configurações
-│   │   ├── database.py          # SQLite connection
-│   │   ├── models.py            # SQLAlchemy models
-│   │   ├── schemas.py           # Pydantic schemas
-│   │   ├── repositories.py      # Repository pattern
-│   │   ├── pdf_extractor.py     # Extração de texto PDF
-│   │   ├── chunker.py           # Chunking strategy
-│   │   ├── embedding_service.py # OpenAI embeddings
-│   │   └── legal_agent.py       # LangChain Agent + Tools
-│   ├── requirements.txt
-│   └── SETUP.md
-├── frontend/
-│   ├── src/
-│   │   ├── pages/               # Dashboard, Upload, Chat, Analysis, Comparison
-│   │   ├── components/          # UI components
-│   │   ├── services/            # API clients
-│   │   ├── store/               # Zustand state
-│   │   └── types/               # TypeScript types
-│   └── package.json
-└── README.md
+```bash
+# 1. Setup
+cd backend && source venv/bin/activate
+alembic upgrade head
+ENVIRONMENT=development python -m app.seed
+
+# 2. Verificar ambiente
+python -m scripts.demo_check
+
+# 3. Resetar dados de demo (opcional)
+python -m scripts.demo_reset
+
+# 4. Iniciar backend
+uvicorn app.main:app --reload
+
+# 5. Iniciar frontend (outro terminal)
+cd frontend && npm run dev
 ```
 
-## APIs Disponíveis
+Abrir http://localhost:5173, fazer login com credenciais demo, fazer upload de contrato, usar chat e análise.
 
-### Documentos
-- `POST /documents/upload` - Upload de PDF
-- `GET /documents` - Listar documentos
-- `GET /documents/{id}` - Detalhes do documento
-- `DELETE /documents/{id}` - Remover documento
+## Testes
 
-### Chat
-- `POST /conversations` - Criar conversa
-- `GET /conversations` - Listar conversas
-- `POST /conversations/{id}/messages` - Enviar mensagem
-- `GET /conversations/{id}/messages` - Histórico
+```bash
+cd backend
+ENVIRONMENT=testing ./venv/bin/python -m pytest -v
+```
 
-### Análise
-- `POST /analysis/summary` - Gerar resumo
-- `POST /analysis/extract` - Extrair informações
-- `POST /analysis/compare` - Comparar documentos
+## Test Status
 
-## Notas Importantes
+- **166 tests passed, 0 failed**
+- Duração: ~38s
+- Cobertura: auth, RBAC, agent router, risk analysis, validators, automation, analysis records, reviews, metrics, smoke test
 
-1. **OPENAI_API_KEY**: Obrigatória para funcionalidades de IA. Sem ela, o backend inicia mas as funções de IA não funcionam.
+## Segurança
 
-2. **SQLite**: O MVP usa SQLite para simplicidade. O banco é criado automaticamente como `legal_ai.db`.
+- Senhas com Argon2
+- JWT com expiração
+- RBAC em todos os endpoints
+- Ownership enforcement (usuários só acessam próprios documentos/análises)
+- Credenciais demo só visíveis em modo desenvolvimento (VITE_DEMO_MODE)
+- SECRET_KEY obrigatório em produção
+- Sem secrets versionados no repositório
 
-3. **Arquivos PDF**: São salvos localmente em `backend/uploads/`.
+## Limitações
 
-4. **Embeddings**: Armazenados como binário no SQLite usando pickle.
+- Análise de riscos é heurística (palavras-chave), sem LLM ou RAG semântico
+- Citation similarity_score é fixo (0.7), não calculado por embeddings
+- Sem OCR (apenas extração de texto PDF)
+- Sem refresh token auto-refresh (redirect para login em 401)
+- Sem testes frontend automatizados (validado via build TypeScript)
+- SQLite (adequado para MVP, PostgreSQL recomendado para produção)
+- Métricas são estimativas do MVP, não calibradas com dados reais
+- Versioning estrutural apenas (sem regeneração automática)
 
-## Demonstração
+## Documentação Adicional
 
-Para demonstrar o projeto:
-
-1. Acesse http://localhost:3000
-2. Faça upload de um contrato PDF
-3. Aguarde processamento (extração + embeddings)
-4. Use o Chat para fazer perguntas sobre o contrato
-5. Use Análise para ver resumo e informações extraídas
-6. Use Comparação para comparar dois contratos
+- `HUMAN_REVIEW.md` — Workflow de revisão humana
+- `IMPACT_METRICS.md` — Métricas de impacto
+- `RISK_ANALYSIS.md` — Análise de riscos
+- `GUARDRAILS.md` — Guardrails e validação
+- `AGENT_EXECUTION.md` — Execução do agente
+- `AUTOMATION.md` — Automação e webhook
+- `DEMO_SCRIPT.md` — Roteiro de demonstração
+- `CASE_PDF_OUTLINE.md` — Estrutura do documento do case
+- `CASE_TECHNICAL_NOTES.md` — Notas técnicas e decisões de arquitetura
 
 ## Licença
 
 MIT
-# Legal-AI-Copilot
-# Legal-AI-Copilot

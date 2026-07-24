@@ -27,10 +27,10 @@
 - Confidence scoring and fallback handling
 
 #### 4.2 Risk Analysis
-- Heuristic + LLM layered analysis
+- Heuristic keyword-based analysis (deterministic, no LLM)
 - Risk severity: low, medium, high, critical
 - Risk categories: payment, liability, termination, confidentiality, etc.
-- Citations with page numbers and excerpts
+- Citations with page numbers and excerpts (similarity_score is fixed heuristic value)
 - Confidence score and disclaimer
 
 #### 4.3 Human Review Workflow
@@ -78,6 +78,9 @@
 - No billing or subscription management
 - Versioning is structural (no automatic regeneration)
 - Metrics are estimates (not calibrated against real workflows)
+- Risk analysis is heuristic-only (keyword matching, no LLM or semantic RAG)
+- Citation similarity_score is fixed (0.7), not computed from embeddings
+- No refresh token auto-refresh (redirect to login on 401)
 
 ### 9. Conclusion
 - MVP demonstrates viable AI-assisted contract review

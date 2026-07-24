@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-O módulo de análise de riscos contratuais identifica potenciais problemas em contratos usando uma arquitetura de três camadas: heurísticas determinísticas, RAG, e validação com guardrails.
+O módulo de análise de riscos contratuais identifica potenciais problemas em contratos usando análise heurística determinística baseada em palavras-chave. Não utiliza LLM nem recuperação semântica por embeddings.
 
 ---
 
@@ -25,10 +25,10 @@ O módulo de análise de riscos contratuais identifica potenciais problemas em c
 │ └─────────────────────────────────────────────────────────┘ │
 │                                                              │
 │ ┌─────────────────────────────────────────────────────────┐ │
-│ │ Layer 2: RAG Retrieval                                  │ │
-│ │ - Recupera chunks relevantes                            │ │
-│ │ - Usa busca por palavras-chave de risco                 │ │
-│ │ - Limita contexto enviado ao LLM                        │ │
+│ │ Layer 2: Text-based Retrieval                           │ │
+│ │ - Recupera chunks relevantes por palavra-chave          │ │
+│ │ - Busca textual (não semântica)                         │ │
+│ │ - Usado apenas para gerar citações                     │ │
 │ └─────────────────────────────────────────────────────────┘ │
 │                                                              │
 │ ┌─────────────────────────────────────────────────────────┐ │
@@ -166,11 +166,12 @@ Calculado baseado em:
 
 ## Integração com Guardrails
 
-O módulo reutiliza:
-- `AIValidator` para validação de respostas
+O módulo utiliza:
 - `CitationSource` para citações estruturadas
 - Disclaimer jurídico centralizado
 - Confidence score com classificação HIGH/MODERATE/LOW
+
+**Nota:** `AIValidator` é importado mas não utilizado na análise de riscos atual. A validação é feita apenas pelo cálculo determinístico de confidence score.
 
 ---
 
@@ -183,7 +184,7 @@ Quando o usuário pergunta sobre riscos:
     ↓
 Agent Router → IDENTIFY_RISKS
     ↓
-Risk Analysis → Heurísticas + RAG
+Risk Analysis → Heurísticas + Text Search
     ↓
 Guardrails → Validação
     ↓
@@ -264,11 +265,12 @@ Resposta
 ## Limitações
 
 1. **Heurísticas fixas** - Palavras-chave pré-definidas, não adaptativas
-2. **Sem LLM obrigatório** - Primeira versão usa apenas heurísticas
-3. **Sem análise semântica profunda** - Não detecta contradições
-4. **Sem detecção de foro** - Não implementado ainda
-5. **Sem detecção de SLA** - Não implementado ainda
-6. **Sem detecção de PI** - Não implementado ainda
+2. **Sem LLM** - A análise usa apenas heurísticas determinísticas; LLM não é utilizado
+3. **Sem RAG semântico** - A recuperação de chunks é por busca textual (palavras-chave), não por embeddings semânticos
+4. **Sem análise semântica profunda** - Não detecta contradições
+5. **Sem detecção de foro** - Não implementado ainda
+6. **Sem detecção de SLA** - Não implementado ainda
+7. **Sem detecção de PI** - Não implementado ainda
 
 ---
 
@@ -294,3 +296,5 @@ Resposta
 - Conversão para dict
 
 Todos os testes usam mocks e não requerem OpenAI.
+
+**Nota sobre `similarity_score`:** O valor `0.7` exibido nas citações é um valor heurístico fixo, não calculado por similaridade semântica real.

@@ -873,7 +873,8 @@ def get_impact_metrics(
                         risks_by_severity[sev] = risks_by_severity.get(sev, 0) + 1
 
     total = len(records)
-    approval_rate = (approved / total * 100) if total > 0 else 0.0
+    non_blocked_total = sum(1 for r in records if not r.blocked)
+    approval_rate = (approved / non_blocked_total * 100) if non_blocked_total > 0 else 0.0
     avg_confidence = (total_confidence / total) if total > 0 else 0.0
     avg_processing = (total_processing_ms / total) if total > 0 else 0.0
 

@@ -1,10 +1,13 @@
 """
 Contract Risk Analysis module.
 
-Analyzes contracts for potential risks using three layers:
-1. Deterministic heuristics
-2. RAG-based retrieval
-3. LLM-based analysis with guardrails
+Analyzes contracts for potential risks using deterministic heuristics:
+1. Keyword-based detection of missing clauses (confidentiality, LGPD, termination)
+2. Keyword-based detection of problematic patterns (unlimited penalties, auto-renewal, indefinite payment)
+3. Text-based retrieval of risk-relevant chunks for citations
+
+No LLM calls or semantic embedding-based retrieval are used in this module.
+All analysis is deterministic and based on keyword matching.
 """
 
 from dataclasses import dataclass, field
@@ -279,10 +282,9 @@ class RiskAnalyzer:
         """
         Analyze contract for risks.
 
-        Uses three layers:
-        1. Heuristic analysis
-        2. RAG retrieval
-        3. LLM analysis with guardrails
+        Uses deterministic heuristic analysis:
+        1. Keyword-based detection of missing clauses and problematic patterns
+        2. Text-based retrieval of risk-relevant chunks for citations
         """
         # Get document
         document = self.db.query(Document).filter(
