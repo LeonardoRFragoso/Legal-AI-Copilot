@@ -19,6 +19,7 @@ from app.logger import logger
 from app.validators import ResponseValidator
 from app.auth import get_current_user, require_role
 from app.auth_routes import router as auth_router
+from app.ai_validator import AIValidator, CitationSource
 from typing import List
 import os
 import uuid
@@ -328,12 +329,69 @@ def send_message(
             "citations": []
         }
     
-    # Add assistant message
+    # Validate response with AI validator
+    validator = AIValidator.get_default_validator()
+    
+    # Retrieve chunks for validation
+    retrieved_chunks = []
+    if conversation.document_id:
+        doc = db.query(Document).filter(Document.id == conversation.document_id).first()
+        if doc:
+            chunks = db.query(Chunk).filter(Chunk.document_id == conversation.document_id).all()
+            for chunk in chunks:
+                # Get similarity score if available
+                embedding = db.query(DocumentEmbedding).filter(
+                    DocumentEmbedding.chunk_id == chunk.id
+                ).first()
+                
+                retrieved_chunks.append({
+                    "id": chunk.id,
+                    "text": chunk.text,
+                    "page_number": chunk.page_number,
+                    "similarity_score": embedding.similarity_score if embedding else 0.5,
+                    "document_id": doc.id,
+                    "document_title": doc.title,
+                })
+    
+    # Process citations from result
+    citations_data = []
+    if result.get("citations"):
+        for citation in result["citations"]:
+            if isinstance(citation, dict):
+                citations_data.append(citation)
+    
+    # Validate the response
+    validated_response = validator.validate(
+        response_content=result["response"],
+        retrieved_chunks=retrieved_chunks,
+        citations=citations_data,
+        document_title=conversation.document_id or "Documento"
+    )
+    
+    # Prepare final response content and metadata
+    final_content = validated_response.content if not validated_response.blocked else validated_response.block_reason
+    
+    # Prepare citations for storage
+    final_citations = [c.to_dict() for c in validated_response.validation.citations]
+    
+    # Add validation metadata to citations
+    validation_metadata = {
+        "confidence_score": validated_response.validation.confidence_score,
+        "confidence_level": validated_response.validation.confidence_level,
+        "hallucination_risk": validated_response.validation.hallucination_risk,
+        "blocked": validated_response.blocked,
+        "disclaimer": validated_response.validation.disclaimer,
+    }
+    
+    # Add assistant message with validation metadata
     assistant_message = conv_repo.add_message(
         conversation_id, 
         "assistant", 
-        result["response"],
-        result["citations"]
+        final_content,
+        {
+            "citations": final_citations,
+            "validation": validation_metadata
+        }
     )
     
     return assistant_message

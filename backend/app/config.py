@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     log_file: str = os.getenv("LOG_FILE", "legal_ai.log")
     environment: str = os.getenv("ENVIRONMENT", "development")
     
+    # AI Validation thresholds
+    min_similarity_score: float = float(os.getenv("MIN_SIMILARITY_SCORE", "0.3"))
+    min_confidence_score: int = int(os.getenv("MIN_CONFIDENCE_SCORE", "60"))
+    min_citations: int = int(os.getenv("MIN_CITATIONS", "1"))
+    max_citation_excerpt_length: int = int(os.getenv("MAX_CITATION_EXCERPT_LENGTH", "300"))
+    
     def __init__(self, **data):
         super().__init__(**data)
         self._validate_secret_key()
