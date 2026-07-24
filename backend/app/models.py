@@ -100,3 +100,27 @@ class Message(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     conversation = relationship("Conversation", back_populates="messages")
+
+
+class AutomationRun(Base):
+    __tablename__ = "automation_runs"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    document_id = Column(String, ForeignKey("documents.id"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    automation_type = Column(String, default="post_upload", nullable=False)
+    status = Column(String, default="PENDING", nullable=False, index=True)
+    current_step = Column(String, default="DOCUMENT_PROCESSING", nullable=False)
+    progress_percent = Column(Integer, default=0, nullable=False)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    error_message = Column(Text, nullable=True)
+    summary_result = Column(JSON, nullable=True)
+    risk_result = Column(JSON, nullable=True)
+    webhook_status = Column(String, default="pending", nullable=False)
+    webhook_error = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    document = relationship("Document")
+    user = relationship("User")

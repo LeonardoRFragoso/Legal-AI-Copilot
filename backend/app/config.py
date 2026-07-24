@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     min_citations: int = int(os.getenv("MIN_CITATIONS", "1"))
     max_citation_excerpt_length: int = int(os.getenv("MAX_CITATION_EXCERPT_LENGTH", "300"))
     
+    # Automation / Webhook settings
+    automation_webhook_url: str = os.getenv("AUTOMATION_WEBHOOK_URL", "")
+    automation_webhook_timeout_seconds: int = int(os.getenv("AUTOMATION_WEBHOOK_TIMEOUT_SECONDS", "10"))
+    automation_webhook_max_retries: int = int(os.getenv("AUTOMATION_WEBHOOK_MAX_RETRIES", "3"))
+    automation_webhook_enabled: bool = os.getenv("AUTOMATION_WEBHOOK_ENABLED", "false").lower() == "true"
+    
     def __init__(self, **data):
         super().__init__(**data)
         self._validate_secret_key()

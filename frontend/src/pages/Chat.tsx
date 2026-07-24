@@ -5,7 +5,78 @@ import Button from '../components/ui/Button'
 import Textarea from '../components/ui/Textarea'
 import { chatService } from '../services/chatService'
 import type { Message, Conversation } from '../types'
-import { Send, MessageSquare, Plus } from 'lucide-react'
+import { Send, MessageSquare, Plus, Shield } from 'lucide-react'
+
+function RiskBadge({ severity }: { severity: string }) {
+  const colors: Record<string, string> = {
+    low: 'bg-green-100 text-green-800',
+    medium: 'bg-yellow-100 text-yellow-800',
+    high: 'bg-orange-100 text-orange-800',
+    critical: 'bg-red-100 text-red-800',
+  }
+  return (
+    <span className={`inline-block px-2 py-1 text-xs rounded font-bold ${colors[severity] || colors.medium}`}>
+      {severity.toUpperCase()}
+    </span>
+  )
+}
+
+function StructuredMessage({ msg }: { msg: Message }) {
+  const citations = msg.citations as any
+  const agent = citations?.agent
+  const structuredData = citations?.structured_data
+  const isRiskAnalysis = agent?.intent === 'identify_risks' && structuredData
+
+  if (isRiskAnalysis) {
+    const riskData = structuredData
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 mb-2">
+          <Shield className="w-4 h-4 text-blue-600" />
+          <span className="text-xs font-medium text-gray-500">Análise de Riscos</span>
+        </div>
+        <div className="whitespace-pre-wrap">{msg.content}</div>
+        {riskData.risks && riskData.risks.length > 0 && (
+          <div className="space-y-2 mt-3">
+            {riskData.risks.map((risk: any, i: number) => (
+              <div key={i} className="border-l-4 border-orange-400 pl-3 py-1">
+                <div className="flex items-center gap-2">
+                  <RiskBadge severity={risk.severity} />
+                  <span className="font-medium text-sm">{risk.title}</span>
+                </div>
+                <p className="text-xs text-gray-600 mt-1">{risk.description}</p>
+                <p className="text-xs text-blue-600 mt-1">→ {risk.recommendation}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {citations?.disclaimer && (
+          <p className="text-xs text-gray-400 italic mt-2">{citations.disclaimer}</p>
+        )}
+      </div>
+    )
+  }
+
+  // Default: render as text with optional citations
+  return (
+    <>
+      <div className="whitespace-pre-wrap">{msg.content}</div>
+      {citations?.citations && citations.citations.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-gray-300">
+          <div className="text-xs font-medium">Citações:</div>
+          {citations.citations.map((citation: any, i: number) => (
+            <div key={i} className="text-xs mt-1 opacity-80">
+              {citation.excerpt?.substring(0, 100) || citation.text?.substring(0, 100)}...
+            </div>
+          ))}
+        </div>
+      )}
+      {citations?.disclaimer && (
+        <p className="text-xs text-gray-400 italic mt-2">{citations.disclaimer}</p>
+      )}
+    </>
+  )
+}
 
 export default function Chat() {
   const [searchParams] = useSearchParams()
@@ -148,16 +219,10 @@ export default function Chat() {
                         : 'bg-gray-100'
                     }`}
                   >
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
-                    {msg.citations && msg.citations.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-gray-300">
-                        <div className="text-xs font-medium">Citações:</div>
-                        {msg.citations.map((citation, i) => (
-                          <div key={i} className="text-xs mt-1 opacity-80">
-                            {citation.text?.substring(0, 100)}...
-                          </div>
-                        ))}
-                      </div>
+                    {msg.role === 'assistant' ? (
+                      <StructuredMessage msg={msg} />
+                    ) : (
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
                     )}
                   </Card>
                 </div>

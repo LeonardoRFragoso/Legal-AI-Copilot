@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { FileText, MessageSquare, BarChart3, GitCompare, Upload, Shield } from 'lucide-react'
+import { FileText, MessageSquare, BarChart3, GitCompare, Upload, Shield, Zap } from 'lucide-react'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
@@ -10,6 +10,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { path: '/chat', icon: MessageSquare, label: 'Chat' },
     { path: '/analysis', icon: BarChart3, label: 'Análise' },
     { path: '/risks', icon: Shield, label: 'Riscos' },
+    { path: '/automations', icon: Zap, label: 'Automações' },
     { path: '/comparison', icon: GitCompare, label: 'Comparação' },
   ]
 

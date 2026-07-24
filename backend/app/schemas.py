@@ -37,7 +37,7 @@ class MessageResponse(BaseModel):
     id: str
     role: str
     content: str
-    citations: Optional[List[Any]]
+    citations: Optional[Any] = None
     created_at: datetime
     
     class Config:
@@ -147,6 +147,61 @@ class RiskAnalysisResponse(BaseModel):
     risks: List[RiskItem]
     citations: List[CitationSourceSchema] = []
     disclaimer: str
+
+
+# Agent Execution Schemas
+class AgentDecisionResponse(BaseModel):
+    intent: str
+    tool: str
+    reason: str
+    confidence: float
+    required_documents: List[str] = []
+    execution_status: str = "pending"
+
+
+class AgentExecutionResult(BaseModel):
+    intent: str
+    tool: str
+    content: str
+    structured_data: Optional[Any] = None
+    validation: Optional[dict] = None
+    citations: List[Any] = []
+    disclaimer: str = ""
+    blocked: bool = False
+    error: Optional[str] = None
+
+
+# Automation Schemas
+class AutomationRunResponse(BaseModel):
+    id: str
+    document_id: str
+    user_id: str
+    automation_type: str
+    status: str
+    current_step: str
+    progress_percent: int
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    error_message: Optional[str] = None
+    summary_result: Optional[Any] = None
+    risk_result: Optional[Any] = None
+    webhook_status: str = "pending"
+    webhook_error: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class SystemStatusResponse(BaseModel):
+    timestamp: str
+    automation_runs_by_status: dict
+    total_documents: int
+    total_risk_analyses: int
+    recent_failures: int
+    avg_automation_duration_seconds: Optional[float] = None
+    failed_webhooks: int
 
 
 # Authentication Schemas

@@ -6,6 +6,7 @@ import Chat from './pages/Chat'
 import Analysis from './pages/Analysis'
 import Comparison from './pages/Comparison'
 import RiskAnalysis from './pages/RiskAnalysis'
+import Automations from './pages/Automations'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/analysis" element={<Analysis />} />
           <Route path="/comparison" element={<Comparison />} />
           <Route path="/risks" element={<RiskAnalysis />} />
+          <Route path="/automations" element={<Automations />} />
         </Routes>
       </Layout>
     </BrowserRouter>

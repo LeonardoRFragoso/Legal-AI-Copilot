@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.database import get_db, engine, Base
@@ -15,7 +15,8 @@ from app.schemas import (
     ExtractionRequest, ExtractionResponse,
     ComparisonRequest, ComparisonResponse,
     RiskAnalysisRequest, RiskAnalysisResponse,
-    RiskItem, CitationSourceSchema
+    RiskItem, CitationSourceSchema,
+    AutomationRunResponse
 )
 from app.logger import logger
 from app.validators import ResponseValidator
@@ -24,7 +25,15 @@ from app.auth_routes import router as auth_router
 from app.ai_validator import AIValidator, CitationSource
 from app.agent_router import LegalAgentRouter, AgentIntent
 from app.risk_analysis import RiskAnalyzer
-from typing import List
+from app.agent_executor import router as agent_router, execute_agent_decision
+from app.automation_service import (
+    create_automation_run,
+    run_post_upload_automation,
+    update_run_status,
+)
+from app.models import AutomationRun
+from typing import List, Optional
+from datetime import datetime
 import os
 import uuid
 import json
@@ -65,6 +74,7 @@ def health():
 
 @app.post("/documents/upload", response_model=DocumentResponse)
 async def upload_document(
+    background_tasks: BackgroundTasks,
     title: str = Form(...),
     file: UploadFile = File(...),
     current_user: User = Depends(require_role(UserRole.LAWYER, UserRole.ASSISTANT, UserRole.ADMIN)),
@@ -119,6 +129,17 @@ async def upload_document(
         
         # Update status
         doc_repo.update_status(document.id, "ready")
+        
+        # Create automation run and schedule background processing
+        automation_run = create_automation_run(
+            db, document.id, current_user.id
+        )
+        background_tasks.add_task(
+            run_post_upload_automation,
+            run_id=automation_run.id,
+            document_id=document.id,
+            user_id=current_user.id,
+        )
         
         return document
     except Exception as e:
@@ -323,79 +344,53 @@ def send_message(
     messages = conv_repo.get_messages(conversation_id)
     chat_history = [{"role": m.role, "content": m.content} for m in messages[:-1]]
     
-    # Query agent with document context
-    try:
-        result = legal_agent.query(message.content, chat_history, conversation.document_id)
-    except ValueError as e:
-        # If agent not initialized, return mock response
-        result = {
-            "response": f"OPENAI_API_KEY não configurada. Mensagem recebida: {message.content}",
-            "citations": []
-        }
-    
-    # Validate response with AI validator
-    validator = AIValidator.get_default_validator()
-    
-    # Retrieve chunks for validation
-    retrieved_chunks = []
-    if conversation.document_id:
-        doc = db.query(Document).filter(Document.id == conversation.document_id).first()
-        if doc:
-            chunks = db.query(Chunk).filter(Chunk.document_id == conversation.document_id).all()
-            for chunk in chunks:
-                # Get similarity score if available
-                embedding = db.query(DocumentEmbedding).filter(
-                    DocumentEmbedding.chunk_id == chunk.id
-                ).first()
-                
-                retrieved_chunks.append({
-                    "id": chunk.id,
-                    "text": chunk.text,
-                    "page_number": chunk.page_number,
-                    "similarity_score": embedding.similarity_score if embedding else 0.5,
-                    "document_id": doc.id,
-                    "document_title": doc.title,
-                })
-    
-    # Process citations from result
-    citations_data = []
-    if result.get("citations"):
-        for citation in result["citations"]:
-            if isinstance(citation, dict):
-                citations_data.append(citation)
-    
-    # Validate the response
-    validated_response = validator.validate(
-        response_content=result["response"],
-        retrieved_chunks=retrieved_chunks,
-        citations=citations_data,
-        document_title=conversation.document_id or "Documento"
+    # Route via Agent Router
+    available_docs = [conversation.document_id] if conversation.document_id else []
+    decision = agent_router.route(
+        user_input=message.content,
+        available_documents=available_docs,
+        conversation_context=conversation.document_id,
     )
     
-    # Prepare final response content and metadata
-    final_content = validated_response.content if not validated_response.blocked else validated_response.block_reason
+    logger.info("agent_routing_completed", extra={
+        "conversation_id": conversation_id,
+        "user_id": current_user.id,
+        "intent": decision.intent.value,
+        "tool": decision.tool,
+    })
     
-    # Prepare citations for storage
-    final_citations = [c.to_dict() for c in validated_response.validation.citations]
+    # Execute the decision
+    execution_result = execute_agent_decision(
+        db=db,
+        user_input=message.content,
+        decision=decision,
+        user=current_user,
+        legal_agent=legal_agent,
+        chat_history=chat_history,
+        conversation_document_id=conversation.document_id,
+    )
     
-    # Add validation metadata to citations
-    validation_metadata = {
-        "confidence_score": validated_response.validation.confidence_score,
-        "confidence_level": validated_response.validation.confidence_level,
-        "hallucination_risk": validated_response.validation.hallucination_risk,
-        "blocked": validated_response.blocked,
-        "disclaimer": validated_response.validation.disclaimer,
+    # Prepare citations and metadata for storage
+    stored_citations = {
+        "citations": execution_result.get("citations", []),
+        "validation": execution_result.get("validation"),
+        "agent": {
+            "intent": execution_result["intent"],
+            "tool": execution_result["tool"],
+            "blocked": execution_result.get("blocked", False),
+        },
+        "disclaimer": execution_result.get("disclaimer", ""),
     }
     
-    # Add assistant message with validation metadata
+    if execution_result.get("structured_data"):
+        stored_citations["structured_data"] = execution_result["structured_data"]
+    
+    # Add assistant message
     assistant_message = conv_repo.add_message(
-        conversation_id, 
-        "assistant", 
-        final_content,
-        {
-            "citations": final_citations,
-            "validation": validation_metadata
-        }
+        conversation_id,
+        "assistant",
+        execution_result["content"],
+        stored_citations,
     )
     
     return assistant_message
@@ -589,3 +584,145 @@ def analyze_risks(
         citations=citations,
         disclaimer=result.disclaimer,
     )
+
+
+# ============================================================================
+# Automation Endpoints
+# ============================================================================
+
+@app.get("/automations/runs", response_model=List[AutomationRunResponse])
+def list_automation_runs(
+    document_id: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """List automation runs. Users see only their own; ADMIN sees all."""
+    query = db.query(AutomationRun)
+
+    if current_user.role != UserRole.ADMIN:
+        query = query.filter(AutomationRun.user_id == current_user.id)
+
+    if document_id:
+        query = query.filter(AutomationRun.document_id == document_id)
+    if status:
+        query = query.filter(AutomationRun.status == status.upper())
+
+    runs = query.order_by(AutomationRun.created_at.desc()).offset(skip).limit(limit).all()
+    return runs
+
+
+@app.get("/automations/runs/{run_id}", response_model=AutomationRunResponse)
+def get_automation_run(
+    run_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get a specific automation run by ID."""
+    run = db.query(AutomationRun).filter(AutomationRun.id == run_id).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Automation run not found")
+
+    if current_user.role != UserRole.ADMIN and run.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    return run
+
+
+@app.post("/automations/runs/{run_id}/retry")
+def retry_automation_run(
+    run_id: str,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retry a failed or partial automation run."""
+    run = db.query(AutomationRun).filter(AutomationRun.id == run_id).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Automation run not found")
+
+    if current_user.role != UserRole.ADMIN and run.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if run.status not in ("FAILED", "PARTIAL_SUCCESS"):
+        raise HTTPException(status_code=400, detail="Only FAILED or PARTIAL_SUCCESS runs can be retried")
+
+    # Reset run state
+    update_run_status(
+        db, run_id,
+        status="PENDING",
+        current_step="DOCUMENT_PROCESSING",
+        progress_percent=0,
+        error_message=None,
+        webhook_status="pending",
+        webhook_error=None,
+    )
+
+    background_tasks.add_task(
+        run_post_upload_automation,
+        run_id=run_id,
+        document_id=run.document_id,
+        user_id=run.user_id,
+    )
+
+    return {"message": "Retry scheduled", "run_id": run_id}
+
+
+# ============================================================================
+# Admin Endpoints
+# ============================================================================
+
+@app.get("/admin/system-status")
+def get_system_status(
+    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
+    """Get aggregated system status. ADMIN only."""
+    from datetime import datetime, timezone
+
+    # Automation runs by status
+    runs = db.query(AutomationRun).all()
+    status_counts = {}
+    for run in runs:
+        status_counts[run.status] = status_counts.get(run.status, 0) + 1
+
+    # Total documents
+    total_docs = db.query(Document).count()
+
+    # Total risk analyses (runs with risk_result)
+    total_risk = db.query(AutomationRun).filter(AutomationRun.risk_result.isnot(None)).count()
+
+    # Recent failures (last 24h)
+    recent_failures = db.query(AutomationRun).filter(
+        AutomationRun.status.in_(["FAILED", "PARTIAL_SUCCESS"])
+    ).count()
+
+    # Failed webhooks
+    failed_webhooks = db.query(AutomationRun).filter(
+        AutomationRun.webhook_status == "failed"
+    ).count()
+
+    # Average automation duration
+    completed = db.query(AutomationRun).filter(
+        AutomationRun.completed_at.isnot(None),
+        AutomationRun.started_at.isnot(None),
+    ).all()
+    avg_duration = None
+    if completed:
+        durations = []
+        for r in completed:
+            delta = (r.completed_at - r.started_at).total_seconds()
+            durations.append(delta)
+        avg_duration = sum(durations) / len(durations)
+
+    return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "automation_runs_by_status": status_counts,
+        "total_documents": total_docs,
+        "total_risk_analyses": total_risk,
+        "recent_failures": recent_failures,
+        "avg_automation_duration_seconds": round(avg_duration, 2) if avg_duration else None,
+        "failed_webhooks": failed_webhooks,
+    }
