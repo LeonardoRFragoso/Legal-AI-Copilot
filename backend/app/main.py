@@ -2,8 +2,8 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.database import get_db, engine, Base
-from app.models import Document, Chunk, DocumentEmbedding, Conversation, Message
-from app.repositories import DocumentRepository, ChunkRepository, EmbeddingRepository, ConversationRepository
+from app.models import Document, Chunk, DocumentEmbedding, Conversation, Message, User, UserRole
+from app.repositories import DocumentRepository, ChunkRepository, EmbeddingRepository, ConversationRepository, UserRepository
 from app.pdf_extractor import PDFExtractor
 from app.chunker import Chunker
 from app.embedding_service import EmbeddingService
@@ -17,6 +17,8 @@ from app.schemas import (
 )
 from app.logger import logger
 from app.validators import ResponseValidator
+from app.auth import get_current_user, require_role
+from app.auth_routes import router as auth_router
 from typing import List
 import os
 import uuid
@@ -35,6 +37,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register authentication routes
+app.include_router(auth_router)
 
 # Initialize services
 pdf_extractor = PDFExtractor()
@@ -57,6 +62,7 @@ def health():
 async def upload_document(
     title: str = Form(...),
     file: UploadFile = File(...),
+    current_user: User = Depends(require_role(UserRole.LAWYER, UserRole.ASSISTANT, UserRole.ADMIN)),
     db: Session = Depends(get_db)
 ):
     try:
@@ -75,6 +81,9 @@ async def upload_document(
         # Create document
         doc_repo = DocumentRepository(db)
         document = doc_repo.create(title, file.filename, file_path, page_count)
+        document.user_id = current_user.id
+        db.commit()
+        db.refresh(document)
         
         # Chunk text
         chunks_data = chunker.chunk_text(text)
@@ -113,23 +122,52 @@ async def upload_document(
 
 
 @app.get("/documents", response_model=List[DocumentResponse])
-def list_documents(db: Session = Depends(get_db)):
+def list_documents(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     doc_repo = DocumentRepository(db)
-    return doc_repo.list_all()
+    if current_user.role == UserRole.ADMIN:
+        return doc_repo.list_all()
+    else:
+        # Non-admin users see only their documents
+        return db.query(Document).filter(Document.user_id == current_user.id).order_by(Document.created_at.desc()).all()
 
 
 @app.get("/documents/{document_id}", response_model=DocumentResponse)
-def get_document(document_id: str, db: Session = Depends(get_db)):
+def get_document(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     doc_repo = DocumentRepository(db)
     document = doc_repo.get(document_id)
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Check access: ADMIN can access all, others only their own
+    if current_user.role != UserRole.ADMIN and document.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
     return document
 
 
 @app.delete("/documents/{document_id}")
-def delete_document(document_id: str, db: Session = Depends(get_db)):
+def delete_document(
+    document_id: str,
+    current_user: User = Depends(require_role(UserRole.LAWYER, UserRole.ASSISTANT, UserRole.ADMIN)),
+    db: Session = Depends(get_db)
+):
     doc_repo = DocumentRepository(db)
+    document = doc_repo.get(document_id)
+    
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Check access: ADMIN can delete all, others only their own
+    if current_user.role != UserRole.ADMIN and document.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
     if not doc_repo.delete(document_id):
         raise HTTPException(status_code=404, detail="Document not found")
     return {"message": "Document deleted"}
@@ -186,11 +224,16 @@ def regenerate_embeddings(document_id: str, db: Session = Depends(get_db)):
 
 
 @app.post("/conversations", response_model=ConversationResponse)
-def create_conversation(conversation: ConversationCreate, db: Session = Depends(get_db)):
+def create_conversation(
+    conversation: ConversationCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     conv_repo = ConversationRepository(db)
     new_conv = conv_repo.create(
         document_id=conversation.document_id,
-        title=conversation.title
+        title=conversation.title,
+        user_id=current_user.id
     )
     
     # If document_id is provided, add context message with analysis
@@ -238,15 +281,23 @@ Você pode fazer perguntas sobre qualquer aspecto deste documento."""
 
 
 @app.get("/conversations", response_model=List[ConversationResponse])
-def list_conversations(db: Session = Depends(get_db)):
+def list_conversations(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     conv_repo = ConversationRepository(db)
-    return conv_repo.list_all()
+    if current_user.role == UserRole.ADMIN:
+        return conv_repo.list_all()
+    else:
+        # Non-admin users see only their conversations
+        return db.query(Conversation).filter(Conversation.user_id == current_user.id).order_by(Conversation.created_at.desc()).all()
 
 
 @app.post("/conversations/{conversation_id}/messages", response_model=MessageResponse)
 def send_message(
     conversation_id: str,
     message: MessageCreate,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     conv_repo = ConversationRepository(db)
@@ -255,6 +306,10 @@ def send_message(
     conversation = conv_repo.get(conversation_id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    # Check access: ADMIN can access all, others only their own
+    if current_user.role != UserRole.ADMIN and conversation.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
     
     # Add user message
     conv_repo.add_message(conversation_id, "user", message.content)
@@ -285,20 +340,57 @@ def send_message(
 
 
 @app.get("/conversations/{conversation_id}/messages", response_model=List[MessageResponse])
-def get_messages(conversation_id: str, db: Session = Depends(get_db)):
+def get_messages(
+    conversation_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     conv_repo = ConversationRepository(db)
+    conversation = conv_repo.get(conversation_id)
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    # Check access: ADMIN can access all, others only their own
+    if current_user.role != UserRole.ADMIN and conversation.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
     return conv_repo.get_messages(conversation_id)
 
 
 @app.post("/analysis/summary", response_model=SummaryResponse)
-def generate_summary(request: SummaryRequest):
+def generate_summary(
+    request: SummaryRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Check document access
+    doc_repo = DocumentRepository(db)
+    document = doc_repo.get(request.document_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    if current_user.role != UserRole.ADMIN and document.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
     result = legal_agent.tools[1]._run(str(request.document_id))
     return SummaryResponse(summary=result, key_points=[])
 
 
 @app.post("/analysis/extract", response_model=ExtractionResponse)
-def extract_information(request: ExtractionRequest):
+def extract_information(
+    request: ExtractionRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     logger.info(f"Extracting information from document: {request.document_id}")
+    
+    # Check document access
+    doc_repo = DocumentRepository(db)
+    document = doc_repo.get(request.document_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    if current_user.role != UserRole.ADMIN and document.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
     
     try:
         result = legal_agent.tools[2]._run(str(request.document_id))
@@ -337,7 +429,23 @@ def extract_information(request: ExtractionRequest):
 
 
 @app.post("/analysis/compare", response_model=ComparisonResponse)
-def compare_documents(request: ComparisonRequest):
+def compare_documents(
+    request: ComparisonRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Check access to both documents
+    doc_repo = DocumentRepository(db)
+    doc_a = doc_repo.get(request.document_a_id)
+    doc_b = doc_repo.get(request.document_b_id)
+    
+    if not doc_a or not doc_b:
+        raise HTTPException(status_code=404, detail="One or both documents not found")
+    
+    if current_user.role != UserRole.ADMIN:
+        if doc_a.user_id != current_user.id or doc_b.user_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+    
     result = legal_agent.tools[3]._run(
         str(request.document_a_id),
         str(request.document_b_id)

@@ -1,8 +1,52 @@
 from sqlalchemy.orm import Session
-from app.models import Document, Chunk, DocumentEmbedding, Conversation, Message
+from app.models import Document, Chunk, DocumentEmbedding, Conversation, Message, User, UserRole
 from typing import List, Optional
 import pickle
 import numpy as np
+from datetime import datetime
+
+
+class UserRepository:
+    def __init__(self, db: Session):
+        self.db = db
+    
+    def create(self, name: str, email: str, password_hash: str, role: UserRole = UserRole.VIEWER) -> User:
+        user = User(
+            name=name,
+            email=email,
+            password_hash=password_hash,
+            role=role,
+            is_active=True
+        )
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
+        return user
+    
+    def get_by_id(self, user_id: str) -> Optional[User]:
+        return self.db.query(User).filter(User.id == user_id).first()
+    
+    def get_by_email(self, email: str) -> Optional[User]:
+        return self.db.query(User).filter(User.email == email).first()
+    
+    def list_all(self) -> List[User]:
+        return self.db.query(User).order_by(User.created_at.desc()).all()
+    
+    def update_last_login(self, user_id: str) -> Optional[User]:
+        user = self.get_by_id(user_id)
+        if user:
+            user.last_login = datetime.utcnow()
+            self.db.commit()
+            self.db.refresh(user)
+        return user
+    
+    def deactivate(self, user_id: str) -> bool:
+        user = self.get_by_id(user_id)
+        if user:
+            user.is_active = False
+            self.db.commit()
+            return True
+        return False
 
 
 class DocumentRepository:
@@ -117,8 +161,8 @@ class ConversationRepository:
     def __init__(self, db: Session):
         self.db = db
     
-    def create(self, document_id: str = None, title: str = None) -> Conversation:
-        conversation = Conversation(document_id=document_id, title=title)
+    def create(self, document_id: str = None, title: str = None, user_id: str = None) -> Conversation:
+        conversation = Conversation(document_id=document_id, title=title, user_id=user_id)
         self.db.add(conversation)
         self.db.commit()
         self.db.refresh(conversation)

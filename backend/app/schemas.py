@@ -1,6 +1,15 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import Optional, List, Any
 from datetime import datetime
+from enum import Enum
+
+
+class UserRoleEnum(str, Enum):
+    ADMIN = "admin"
+    LAWYER = "lawyer"
+    ASSISTANT = "assistant"
+    CLIENT = "client"
+    VIEWER = "viewer"
 
 
 class DocumentCreate(BaseModel):
@@ -104,3 +113,40 @@ class ComparisonResponse(BaseModel):
     similarities: List[str]
     differences: List[str]
     summary: str
+
+
+# Authentication Schemas
+class UserRegister(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    email: EmailStr
+    password: str = Field(..., min_length=8, max_length=255)
+    role: Optional[UserRoleEnum] = UserRoleEnum.VIEWER
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
+class UserResponse(BaseModel):
+    id: str
+    name: str
+    email: str
+    role: UserRoleEnum
+    is_active: bool
+    created_at: datetime
+    last_login: Optional[datetime]
+    
+    class Config:
+        from_attributes = True
