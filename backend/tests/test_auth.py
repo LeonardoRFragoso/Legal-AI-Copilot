@@ -86,7 +86,7 @@ def test_register_user():
         json={
             "name": "Test User",
             "email": "test@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
@@ -106,7 +106,7 @@ def test_register_duplicate_email():
         json={
             "name": "Test User",
             "email": "test@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
@@ -116,7 +116,7 @@ def test_register_duplicate_email():
         json={
             "name": "Another User",
             "email": "test@example.com",
-            "password": "AnotherPassword123"
+            "password": "TestPass456"
         }
     )
     
@@ -132,7 +132,7 @@ def test_login_success():
         json={
             "name": "Test User",
             "email": "test@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
@@ -141,7 +141,7 @@ def test_login_success():
         "/auth/login",
         json={
             "email": "test@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
@@ -160,7 +160,7 @@ def test_login_invalid_password():
         json={
             "name": "Test User",
             "email": "test@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
@@ -169,7 +169,7 @@ def test_login_invalid_password():
         "/auth/login",
         json={
             "email": "test@example.com",
-            "password": "WrongPassword"
+            "password": "TestPass789"
         }
     )
     
@@ -183,7 +183,7 @@ def test_login_nonexistent_user():
         "/auth/login",
         json={
             "email": "nonexistent@example.com",
-            "password": "SomePassword"
+            "password": "TestPass000"
         }
     )
     
@@ -198,7 +198,7 @@ def test_refresh_token():
         json={
             "name": "Test User",
             "email": "test@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
@@ -206,7 +206,7 @@ def test_refresh_token():
         "/auth/login",
         json={
             "email": "test@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
@@ -232,7 +232,7 @@ def test_logout():
         json={
             "name": "Test User",
             "email": "test@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
@@ -240,7 +240,7 @@ def test_logout():
         "/auth/login",
         json={
             "email": "test@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
@@ -263,7 +263,7 @@ def test_get_current_user():
         json={
             "name": "Test User",
             "email": "test@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
@@ -271,7 +271,7 @@ def test_get_current_user():
         "/auth/login",
         json={
             "email": "test@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
@@ -314,7 +314,7 @@ def test_rbac_lawyer_access():
         json={
             "name": "Lawyer User",
             "email": "lawyer@example.com",
-            "password": "SecurePassword123",
+            "password": "TestPass123",
             "role": "lawyer"
         }
     )
@@ -327,7 +327,7 @@ def test_rbac_lawyer_access():
         "/auth/login",
         json={
             "email": "lawyer@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
@@ -350,7 +350,7 @@ def test_rbac_viewer_cannot_upload():
         json={
             "name": "Viewer User",
             "email": "viewer@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
@@ -358,7 +358,7 @@ def test_rbac_viewer_cannot_upload():
         "/auth/login",
         json={
             "email": "viewer@example.com",
-            "password": "SecurePassword123"
+            "password": "TestPass123"
         }
     )
     
