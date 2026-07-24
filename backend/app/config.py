@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     automation_webhook_max_retries: int = int(os.getenv("AUTOMATION_WEBHOOK_MAX_RETRIES", "3"))
     automation_webhook_enabled: bool = os.getenv("AUTOMATION_WEBHOOK_ENABLED", "false").lower() == "true"
     
+    # Estimated manual processing times (minutes) — illustrative MVP reference values
+    estimated_manual_summary_minutes: int = int(os.getenv("ESTIMATED_MANUAL_SUMMARY_MINUTES", "30"))
+    estimated_manual_extraction_minutes: int = int(os.getenv("ESTIMATED_MANUAL_EXTRACTION_MINUTES", "45"))
+    estimated_manual_comparison_minutes: int = int(os.getenv("ESTIMATED_MANUAL_COMPARISON_MINUTES", "90"))
+    estimated_manual_qa_minutes: int = int(os.getenv("ESTIMATED_MANUAL_QA_MINUTES", "15"))
+    estimated_manual_risk_analysis_minutes: int = int(os.getenv("ESTIMATED_MANUAL_RISK_ANALYSIS_MINUTES", "120"))
+    
     def __init__(self, **data):
         super().__init__(**data)
         self._validate_secret_key()

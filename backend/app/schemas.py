@@ -238,3 +238,92 @@ class UserResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+# ============================================================================
+# Analysis Record & Review Schemas
+# ============================================================================
+
+class AnalysisReviewCreate(BaseModel):
+    decision: str = Field(..., pattern="^(APPROVE|REJECT|REQUEST_CHANGES)$")
+    comment: Optional[str] = None
+
+
+class AnalysisReviewResponse(BaseModel):
+    id: str
+    analysis_record_id: str
+    reviewer_user_id: str
+    reviewer_name: str = ""
+    previous_status: str
+    new_status: str
+    decision: str
+    comment: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AnalysisRecordResponse(BaseModel):
+    id: str
+    document_id: str
+    user_id: str
+    automation_run_id: Optional[str] = None
+    conversation_id: Optional[str] = None
+    message_id: Optional[str] = None
+    analysis_type: str
+    status: str
+    content_summary: Optional[str] = None
+    structured_result: Optional[Any] = None
+    confidence_score: Optional[int] = None
+    confidence_level: Optional[str] = None
+    overall_risk: Optional[str] = None
+    citations: Optional[Any] = None
+    disclaimer: Optional[str] = None
+    model_name: Optional[str] = None
+    prompt_version: Optional[str] = None
+    blocked: bool = False
+    processing_duration_ms: Optional[int] = None
+    estimated_manual_minutes: Optional[int] = None
+    estimated_time_saved_minutes: Optional[int] = None
+    version: int = 1
+    parent_analysis_id: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    reviews: List[AnalysisReviewResponse] = []
+
+    class Config:
+        from_attributes = True
+
+
+class AnalysisRecordListResponse(BaseModel):
+    id: str
+    document_id: str
+    analysis_type: str
+    status: str
+    confidence_score: Optional[int] = None
+    confidence_level: Optional[str] = None
+    overall_risk: Optional[str] = None
+    blocked: bool = False
+    version: int = 1
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ImpactMetricsResponse(BaseModel):
+    documents_total: int = 0
+    analyses_total: int = 0
+    analyses_by_type: dict = {}
+    reviews_by_status: dict = {}
+    approval_rate: float = 0.0
+    average_confidence_score: float = 0.0
+    risks_by_severity: dict = {}
+    automations_by_status: dict = {}
+    failed_webhooks: int = 0
+    average_processing_duration_ms: float = 0.0
+    estimated_manual_minutes: int = 0
+    estimated_time_saved_minutes: int = 0
+    estimated_time_saved_hours: float = 0.0
+    estimation_notice: str = ""

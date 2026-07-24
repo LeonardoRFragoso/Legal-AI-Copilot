@@ -124,3 +124,54 @@ class AutomationRun(Base):
     
     document = relationship("Document")
     user = relationship("User")
+
+
+class AnalysisRecord(Base):
+    __tablename__ = "analysis_records"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    document_id = Column(String, ForeignKey("documents.id"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    automation_run_id = Column(String, ForeignKey("automation_runs.id"), nullable=True, index=True)
+    conversation_id = Column(String, ForeignKey("conversations.id"), nullable=True)
+    message_id = Column(String, ForeignKey("messages.id"), nullable=True)
+    analysis_type = Column(String, nullable=False, index=True)
+    status = Column(String, default="GENERATED", nullable=False, index=True)
+    content_summary = Column(Text, nullable=True)
+    structured_result = Column(JSON, nullable=True)
+    confidence_score = Column(Integer, nullable=True)
+    confidence_level = Column(String, nullable=True)
+    overall_risk = Column(String, nullable=True)
+    citations = Column(JSON, nullable=True)
+    disclaimer = Column(Text, nullable=True)
+    model_name = Column(String, nullable=True)
+    prompt_version = Column(String, nullable=True)
+    blocked = Column(Boolean, default=False, nullable=False)
+    processing_duration_ms = Column(Integer, nullable=True)
+    estimated_manual_minutes = Column(Integer, nullable=True)
+    estimated_time_saved_minutes = Column(Integer, nullable=True)
+    version = Column(Integer, default=1, nullable=False)
+    parent_analysis_id = Column(String, ForeignKey("analysis_records.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    document = relationship("Document")
+    user = relationship("User")
+    reviews = relationship("AnalysisReview", back_populates="analysis_record", cascade="all, delete-orphan")
+    parent = relationship("AnalysisRecord", remote_side=[id], backref="child_versions")
+
+
+class AnalysisReview(Base):
+    __tablename__ = "analysis_reviews"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    analysis_record_id = Column(String, ForeignKey("analysis_records.id"), nullable=False, index=True)
+    reviewer_user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    previous_status = Column(String, nullable=False)
+    new_status = Column(String, nullable=False)
+    decision = Column(String, nullable=False)
+    comment = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    analysis_record = relationship("AnalysisRecord", back_populates="reviews")
+    reviewer = relationship("User")

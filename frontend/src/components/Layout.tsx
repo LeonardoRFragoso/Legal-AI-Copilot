@@ -1,8 +1,11 @@
-import { Link, useLocation } from 'react-router-dom'
-import { FileText, MessageSquare, BarChart3, GitCompare, Upload, Shield, Zap } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { FileText, MessageSquare, BarChart3, GitCompare, Upload, Shield, Zap, ClipboardCheck, TrendingUp, LogOut } from 'lucide-react'
+import { useAuthStore } from '../store/authStore'
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuthStore()
 
   const navItems = [
     { path: '/dashboard', icon: FileText, label: 'Dashboard' },
@@ -11,8 +14,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { path: '/analysis', icon: BarChart3, label: 'Análise' },
     { path: '/risks', icon: Shield, label: 'Riscos' },
     { path: '/automations', icon: Zap, label: 'Automações' },
+    { path: '/reviews', icon: ClipboardCheck, label: 'Revisões' },
+    { path: '/insights', icon: TrendingUp, label: 'Métricas' },
     { path: '/comparison', icon: GitCompare, label: 'Comparação' },
   ]
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -43,6 +53,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   )
                 })}
               </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {user && (
+                <div className="text-right">
+                  <span className="text-sm font-medium text-gray-700">{user.name}</span>
+                  <span className="ml-2 px-2 py-0.5 text-xs rounded font-bold bg-blue-100 text-blue-700">
+                    {user.role}
+                  </span>
+                </div>
+              )}
+              <button
+                onClick={handleLogout}
+                className="text-gray-400 hover:text-gray-600"
+                title="Sair"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>

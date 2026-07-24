@@ -9,6 +9,11 @@ from sqlalchemy.orm import Session
 from app.models import AutomationRun, Document, User
 from app.agent_executor import execute_summary, execute_risk_analysis
 from app.webhook_service import build_analysis_completed_payload, send_webhook
+from app.analysis_record_service import (
+    create_analysis_record,
+    ANALYSIS_TYPE_SUMMARY,
+    ANALYSIS_TYPE_RISK_ANALYSIS,
+)
 from app.logger import logger
 from app.database import SessionLocal
 from datetime import datetime
@@ -156,6 +161,18 @@ def run_post_upload_automation(
             summary_result={"summary": summary_result.get("content", "")},
         )
 
+        # Persist AnalysisRecord for summary
+        if not summary_result.get("error"):
+            create_analysis_record(
+                db=db,
+                document_id=document_id,
+                user_id=user_id,
+                analysis_type=ANALYSIS_TYPE_SUMMARY,
+                content_summary=summary_result.get("content", "")[:500],
+                automation_run_id=run_id,
+                model_name="gpt-4",
+            )
+
         # Step 3: Risk Analysis
         update_run_status(
             db, run_id,
@@ -183,6 +200,24 @@ def run_post_upload_automation(
             progress_percent=85,
             risk_result=risk_data,
         )
+
+        # Persist AnalysisRecord for risk analysis
+        if not risk_result.get("error") and risk_data:
+            create_analysis_record(
+                db=db,
+                document_id=document_id,
+                user_id=user_id,
+                analysis_type=ANALYSIS_TYPE_RISK_ANALYSIS,
+                content_summary=risk_data.get("summary", "")[:500],
+                structured_result=risk_data,
+                confidence_score=risk_data.get("confidence_score"),
+                confidence_level=risk_data.get("confidence_level"),
+                overall_risk=risk_data.get("overall_risk"),
+                citations=risk_data.get("citations", []),
+                disclaimer=risk_data.get("disclaimer", ""),
+                automation_run_id=run_id,
+                model_name="heuristic",
+            )
 
         # Step 4: Webhook
         update_run_status(

@@ -19,6 +19,7 @@ from app.schemas import (
     AutomationRunResponse
 )
 from app.logger import logger
+from app.config import get_settings
 from app.validators import ResponseValidator
 from app.auth import get_current_user, require_role
 from app.auth_routes import router as auth_router
@@ -31,12 +32,36 @@ from app.automation_service import (
     run_post_upload_automation,
     update_run_status,
 )
-from app.models import AutomationRun
+from app.models import AutomationRun, AnalysisRecord, AnalysisReview
+from app.analysis_record_service import (
+    create_analysis_record,
+    get_analysis_record,
+    list_analysis_records,
+    check_access,
+    create_review,
+    get_reviews,
+    validate_transition,
+    can_review,
+    DECISION_TO_STATUS,
+    ANALYSIS_TYPE_SUMMARY,
+    ANALYSIS_TYPE_EXTRACTION,
+    ANALYSIS_TYPE_COMPARISON,
+    ANALYSIS_TYPE_QUESTION_ANSWERING,
+    ANALYSIS_TYPE_RISK_ANALYSIS,
+)
+from app.schemas import (
+    AnalysisRecordResponse,
+    AnalysisRecordListResponse,
+    AnalysisReviewCreate,
+    AnalysisReviewResponse,
+    ImpactMetricsResponse,
+)
 from typing import List, Optional
 from datetime import datetime
 import os
 import uuid
 import json
+import time as time_module
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -60,6 +85,7 @@ pdf_extractor = PDFExtractor()
 chunker = Chunker()
 embedding_service = EmbeddingService()
 legal_agent = LegalAgent()
+settings = get_settings()
 
 
 @app.get("/")
@@ -393,6 +419,43 @@ def send_message(
         stored_citations,
     )
     
+    # Persist AnalysisRecord for reviewable intents
+    reviewable_intents = {
+        AgentIntent.SUMMARIZE_DOCUMENT.value,
+        AgentIntent.EXTRACT_INFORMATION.value,
+        AgentIntent.IDENTIFY_RISKS.value,
+        AgentIntent.QUESTION_ANSWERING.value,
+    }
+    if execution_result["intent"] in reviewable_intents and not execution_result.get("error"):
+        intent = execution_result["intent"]
+        type_map = {
+            AgentIntent.SUMMARIZE_DOCUMENT.value: ANALYSIS_TYPE_SUMMARY,
+            AgentIntent.EXTRACT_INFORMATION.value: ANALYSIS_TYPE_EXTRACTION,
+            AgentIntent.IDENTIFY_RISKS.value: ANALYSIS_TYPE_RISK_ANALYSIS,
+            AgentIntent.QUESTION_ANSWERING.value: ANALYSIS_TYPE_QUESTION_ANSWERING,
+        }
+        analysis_type = type_map.get(intent, "QUESTION_ANSWERING")
+        validation = execution_result.get("validation")
+        structured = execution_result.get("structured_data")
+        
+        create_analysis_record(
+            db=db,
+            document_id=conversation.document_id or "",
+            user_id=current_user.id,
+            analysis_type=analysis_type,
+            content_summary=execution_result["content"][:500],
+            structured_result=structured,
+            confidence_score=validation.get("confidence_score") if validation else None,
+            confidence_level=validation.get("confidence_level") if validation else None,
+            overall_risk=structured.get("overall_risk") if structured else None,
+            citations=execution_result.get("citations", []),
+            disclaimer=execution_result.get("disclaimer", ""),
+            model_name="gpt-4" if settings.openai_api_key else "heuristic",
+            blocked=execution_result.get("blocked", False),
+            conversation_id=conversation_id,
+            message_id=assistant_message.id,
+        )
+    
     return assistant_message
 
 
@@ -430,6 +493,16 @@ def generate_summary(
         raise HTTPException(status_code=403, detail="Access denied")
     
     result = legal_agent.tools[1]._run(str(request.document_id))
+    
+    create_analysis_record(
+        db=db,
+        document_id=request.document_id,
+        user_id=current_user.id,
+        analysis_type=ANALYSIS_TYPE_SUMMARY,
+        content_summary=result[:500],
+        model_name="gpt-4" if settings.openai_api_key else "heuristic",
+    )
+    
     return SummaryResponse(summary=result, key_points=[])
 
 
@@ -470,6 +543,16 @@ def extract_information(
         
         logger.info(f"Extraction completed successfully for document: {request.document_id}")
         
+        create_analysis_record(
+            db=db,
+            document_id=request.document_id,
+            user_id=current_user.id,
+            analysis_type=ANALYSIS_TYPE_EXTRACTION,
+            content_summary=f"Parties: {len(data.get('parties', []))}, Clauses: {len(data.get('clauses', []))}",
+            structured_result=data,
+            model_name="gpt-4" if settings.openai_api_key else "heuristic",
+        )
+        
         # Return structured data as-is (already enriched by the LLM)
         return ExtractionResponse(
             parties=data.get("parties", []),
@@ -508,6 +591,15 @@ def compare_documents(
         str(request.document_b_id)
     )
     
+    create_analysis_record(
+        db=db,
+        document_id=request.document_a_id,
+        user_id=current_user.id,
+        analysis_type=ANALYSIS_TYPE_COMPARISON,
+        content_summary=result[:500],
+        model_name="gpt-4" if settings.openai_api_key else "heuristic",
+    )
+    
     # Parse result
     return ComparisonResponse(
         similarities=[],
@@ -538,6 +630,22 @@ def analyze_risks(
     # Run risk analysis
     analyzer = RiskAnalyzer(db)
     result = analyzer.analyze(request.document_id)
+
+    # Persist AnalysisRecord
+    create_analysis_record(
+        db=db,
+        document_id=request.document_id,
+        user_id=current_user.id,
+        analysis_type=ANALYSIS_TYPE_RISK_ANALYSIS,
+        content_summary=result.summary[:500],
+        structured_result=result.to_dict(),
+        confidence_score=result.confidence_score,
+        confidence_level=result.confidence_level,
+        overall_risk=result.overall_risk.value,
+        citations=[c.to_dict() for c in result.citations],
+        disclaimer=result.disclaimer,
+        model_name="heuristic",
+    )
 
     # Convert to response schema
     risks = [
@@ -583,6 +691,223 @@ def analyze_risks(
         risks=risks,
         citations=citations,
         disclaimer=result.disclaimer,
+    )
+
+
+# ============================================================================
+# Analysis Records & Review Endpoints
+# ============================================================================
+
+@app.get("/analyses", response_model=List[AnalysisRecordListResponse])
+def list_analyses(
+    document_id: Optional[str] = Query(None),
+    analysis_type: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    confidence_level: Optional[str] = Query(None),
+    overall_risk: Optional[str] = Query(None),
+    created_from: Optional[datetime] = Query(None),
+    created_to: Optional[datetime] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List analysis records with filters. Users see only their own; ADMIN sees all."""
+    return list_analysis_records(
+        db=db,
+        user=current_user,
+        document_id=document_id,
+        analysis_type=analysis_type,
+        status=status,
+        confidence_level=confidence_level,
+        overall_risk=overall_risk,
+        created_from=created_from,
+        created_to=created_to,
+        skip=skip,
+        limit=limit,
+    )
+
+
+@app.get("/analyses/{analysis_id}", response_model=AnalysisRecordResponse)
+def get_analysis(
+    analysis_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get a specific analysis record with review history."""
+    record = get_analysis_record(db, analysis_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Analysis record not found")
+    if not check_access(db, record, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
+    return record
+
+
+@app.post("/analyses/{analysis_id}/reviews", response_model=AnalysisReviewResponse, status_code=201)
+def create_analysis_review(
+    analysis_id: str,
+    review: AnalysisReviewCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create a review (approve/reject/request_changes) for an analysis record."""
+    record = get_analysis_record(db, analysis_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Analysis record not found")
+    if not check_access(db, record, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if not can_review(current_user, record):
+        raise HTTPException(status_code=403, detail="Your role cannot review analyses")
+
+    try:
+        review_entry = create_review(
+            db=db,
+            record=record,
+            reviewer=current_user,
+            decision=review.decision,
+            comment=review.comment,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Build response with reviewer name
+    resp = AnalysisReviewResponse(
+        id=review_entry.id,
+        analysis_record_id=review_entry.analysis_record_id,
+        reviewer_user_id=review_entry.reviewer_user_id,
+        reviewer_name=current_user.name,
+        previous_status=review_entry.previous_status,
+        new_status=review_entry.new_status,
+        decision=review_entry.decision,
+        comment=review_entry.comment,
+        created_at=review_entry.created_at,
+    )
+    return resp
+
+
+@app.get("/analyses/{analysis_id}/reviews", response_model=List[AnalysisReviewResponse])
+def list_analysis_reviews(
+    analysis_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get review history for an analysis record (chronological order)."""
+    record = get_analysis_record(db, analysis_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Analysis record not found")
+    if not check_access(db, record, current_user):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    reviews = get_reviews(db, analysis_id)
+    result = []
+    for r in reviews:
+        reviewer = db.query(User).filter(User.id == r.reviewer_user_id).first()
+        result.append(AnalysisReviewResponse(
+            id=r.id,
+            analysis_record_id=r.analysis_record_id,
+            reviewer_user_id=r.reviewer_user_id,
+            reviewer_name=reviewer.name if reviewer else "",
+            previous_status=r.previous_status,
+            new_status=r.new_status,
+            decision=r.decision,
+            comment=r.comment,
+            created_at=r.created_at,
+        ))
+    return result
+
+
+# ============================================================================
+# Metrics Endpoint
+# ============================================================================
+
+@app.get("/metrics/impact", response_model=ImpactMetricsResponse)
+def get_impact_metrics(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get aggregated impact metrics. ADMIN sees global; others see own data."""
+    query = db.query(AnalysisRecord)
+    if current_user.role != UserRole.ADMIN:
+        query = query.filter(AnalysisRecord.user_id == current_user.id)
+
+    records = query.all()
+
+    analyses_by_type = {}
+    reviews_by_status = {}
+    risks_by_severity = {}
+    total_confidence = 0
+    total_processing_ms = 0
+    total_manual_min = 0
+    total_saved_min = 0
+    approved = 0
+    rejected = 0
+    pending = 0
+
+    for r in records:
+        analyses_by_type[r.analysis_type] = analyses_by_type.get(r.analysis_type, 0) + 1
+        reviews_by_status[r.status] = reviews_by_status.get(r.status, 0) + 1
+
+        if r.status == "APPROVED":
+            approved += 1
+        elif r.status == "REJECTED":
+            rejected += 1
+        elif r.status in ("GENERATED", "PENDING_REVIEW", "NEEDS_CHANGES"):
+            pending += 1
+
+        if r.confidence_score:
+            total_confidence += r.confidence_score
+        if r.processing_duration_ms:
+            total_processing_ms += r.processing_duration_ms
+        if r.estimated_manual_minutes:
+            total_manual_min += r.estimated_manual_minutes
+        if r.estimated_time_saved_minutes:
+            total_saved_min += r.estimated_time_saved_minutes
+
+        if r.structured_result and isinstance(r.structured_result, dict):
+            risks = r.structured_result.get("risks", [])
+            if isinstance(risks, list):
+                for risk in risks:
+                    if isinstance(risk, dict):
+                        sev = risk.get("severity", "unknown")
+                        risks_by_severity[sev] = risks_by_severity.get(sev, 0) + 1
+
+    total = len(records)
+    approval_rate = (approved / total * 100) if total > 0 else 0.0
+    avg_confidence = (total_confidence / total) if total > 0 else 0.0
+    avg_processing = (total_processing_ms / total) if total > 0 else 0.0
+
+    # Automation stats
+    auto_query = db.query(AutomationRun)
+    if current_user.role != UserRole.ADMIN:
+        auto_query = auto_query.filter(AutomationRun.user_id == current_user.id)
+    auto_runs = auto_query.all()
+    automations_by_status = {}
+    failed_webhooks = 0
+    for run in auto_runs:
+        automations_by_status[run.status] = automations_by_status.get(run.status, 0) + 1
+        if run.webhook_status == "failed":
+            failed_webhooks += 1
+
+    total_docs = db.query(Document).count()
+    if current_user.role != UserRole.ADMIN:
+        total_docs = db.query(Document).filter(Document.user_id == current_user.id).count()
+
+    return ImpactMetricsResponse(
+        documents_total=total_docs,
+        analyses_total=total,
+        analyses_by_type=analyses_by_type,
+        reviews_by_status=reviews_by_status,
+        approval_rate=round(approval_rate, 1),
+        average_confidence_score=round(avg_confidence, 1),
+        risks_by_severity=risks_by_severity,
+        automations_by_status=automations_by_status,
+        failed_webhooks=failed_webhooks,
+        average_processing_duration_ms=round(avg_processing, 1),
+        estimated_manual_minutes=total_manual_min,
+        estimated_time_saved_minutes=total_saved_min,
+        estimated_time_saved_hours=round(total_saved_min / 60.0, 1),
+        estimation_notice="As métricas de produtividade são estimativas do MVP baseadas em tempos manuais configuráveis.",
     )
 
 
@@ -704,6 +1029,14 @@ def get_system_status(
         AutomationRun.webhook_status == "failed"
     ).count()
 
+    # Analysis records — blocked and pending review
+    blocked_analyses = db.query(AnalysisRecord).filter(
+        AnalysisRecord.blocked == True
+    ).count()
+    pending_review = db.query(AnalysisRecord).filter(
+        AnalysisRecord.status.in_(["GENERATED", "PENDING_REVIEW", "NEEDS_CHANGES"])
+    ).count()
+
     # Average automation duration
     completed = db.query(AutomationRun).filter(
         AutomationRun.completed_at.isnot(None),
@@ -719,10 +1052,13 @@ def get_system_status(
 
     return {
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "health": "healthy",
         "automation_runs_by_status": status_counts,
         "total_documents": total_docs,
         "total_risk_analyses": total_risk,
         "recent_failures": recent_failures,
         "avg_automation_duration_seconds": round(avg_duration, 2) if avg_duration else None,
         "failed_webhooks": failed_webhooks,
+        "blocked_analyses": blocked_analyses,
+        "pending_review": pending_review,
     }
