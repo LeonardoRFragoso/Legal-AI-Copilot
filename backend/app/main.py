@@ -13,13 +13,17 @@ from app.schemas import (
     ConversationCreate, ConversationResponse,
     SummaryRequest, SummaryResponse,
     ExtractionRequest, ExtractionResponse,
-    ComparisonRequest, ComparisonResponse
+    ComparisonRequest, ComparisonResponse,
+    RiskAnalysisRequest, RiskAnalysisResponse,
+    RiskItem, CitationSourceSchema
 )
 from app.logger import logger
 from app.validators import ResponseValidator
 from app.auth import get_current_user, require_role
 from app.auth_routes import router as auth_router
 from app.ai_validator import AIValidator, CitationSource
+from app.agent_router import LegalAgentRouter, AgentIntent
+from app.risk_analysis import RiskAnalyzer
 from typing import List
 import os
 import uuid
@@ -514,4 +518,74 @@ def compare_documents(
         similarities=[],
         differences=[],
         summary=result
+    )
+
+
+# ============================================================================
+# Risk Analysis Endpoints
+# ============================================================================
+
+@app.post("/analysis/risks", response_model=RiskAnalysisResponse)
+def analyze_risks(
+    request: RiskAnalysisRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Analyze contract for potential risks."""
+    # Verify document exists and user has access
+    document = db.query(Document).filter(Document.id == request.document_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if current_user.role != UserRole.ADMIN and document.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Run risk analysis
+    analyzer = RiskAnalyzer(db)
+    result = analyzer.analyze(request.document_id)
+
+    # Convert to response schema
+    risks = [
+        RiskItem(
+            title=r.title,
+            description=r.description,
+            severity=r.severity.value,
+            category=r.category.value,
+            recommendation=r.recommendation,
+            citations=[
+                CitationSourceSchema(
+                    document_id=c.document_id,
+                    document_title=c.document_title,
+                    chunk_id=c.chunk_id,
+                    page_number=c.page_number,
+                    excerpt=c.excerpt,
+                    similarity_score=c.similarity_score,
+                )
+                for c in r.citations
+            ],
+            confidence_score=r.confidence_score,
+        )
+        for r in result.risks
+    ]
+
+    citations = [
+        CitationSourceSchema(
+            document_id=c.document_id,
+            document_title=c.document_title,
+            chunk_id=c.chunk_id,
+            page_number=c.page_number,
+            excerpt=c.excerpt,
+            similarity_score=c.similarity_score,
+        )
+        for c in result.citations
+    ]
+
+    return RiskAnalysisResponse(
+        overall_risk=result.overall_risk.value,
+        confidence_score=result.confidence_score,
+        confidence_level=result.confidence_level,
+        summary=result.summary,
+        risks=risks,
+        citations=citations,
+        disclaimer=result.disclaimer,
     )

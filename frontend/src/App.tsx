@@ -5,6 +5,7 @@ import Upload from './pages/Upload'
 import Chat from './pages/Chat'
 import Analysis from './pages/Analysis'
 import Comparison from './pages/Comparison'
+import RiskAnalysis from './pages/RiskAnalysis'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/chat" element={<Chat />} />
           <Route path="/analysis" element={<Analysis />} />
           <Route path="/comparison" element={<Comparison />} />
+          <Route path="/risks" element={<RiskAnalysis />} />
         </Routes>
       </Layout>
     </BrowserRouter>

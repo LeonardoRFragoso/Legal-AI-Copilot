@@ -115,6 +115,40 @@ class ComparisonResponse(BaseModel):
     summary: str
 
 
+# Risk Analysis Schemas
+class CitationSourceSchema(BaseModel):
+    document_id: str
+    document_title: str
+    chunk_id: str
+    page_number: Optional[int] = None
+    excerpt: str = ""
+    similarity_score: Optional[float] = None
+
+
+class RiskItem(BaseModel):
+    title: str
+    description: str
+    severity: str
+    category: str
+    recommendation: str
+    citations: List[CitationSourceSchema] = []
+    confidence_score: int = 75
+
+
+class RiskAnalysisRequest(BaseModel):
+    document_id: str
+
+
+class RiskAnalysisResponse(BaseModel):
+    overall_risk: str
+    confidence_score: int
+    confidence_level: str
+    summary: str
+    risks: List[RiskItem]
+    citations: List[CitationSourceSchema] = []
+    disclaimer: str
+
+
 # Authentication Schemas
 class UserRegister(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
