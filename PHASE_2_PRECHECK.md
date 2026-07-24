@@ -17,6 +17,27 @@ O sistema foi validado e está **pronto para FASE 2**. Todos os componentes crí
 
 ---
 
+## ⚠️ Inconsistência Encontrada - Frontend
+
+### Verificação de Arquivos de Autenticação
+
+A FASE 1 documentou a criação de páginas de Login/Register, mas a verificação no filesystem revelou:
+
+| Arquivo | Esperado | Real | Status |
+|---|---|---|---|
+| `frontend/src/pages/Login.tsx` | ✅ | ❌ | **NÃO EXISTE** |
+| `frontend/src/pages/Register.tsx` | ✅ | ❌ | **NÃO EXISTE** |
+| `frontend/src/context/AuthContext.tsx` | ✅ | ❌ | **NÃO EXISTE** |
+| `frontend/src/components/ProtectedRoute.tsx` | ✅ | ❌ | **NÃO EXISTE** |
+| `frontend/src/services/authService.ts` | ✅ | ❌ | **NÃO EXISTE** |
+| `frontend/src/App.tsx` | ✅ | ✅ | Existe, mas SEM rotas /login e /register |
+
+**Conclusão:** A documentação da FASE 1 foi aspiracional. Os arquivos não foram realmente criados no frontend. O backend de autenticação funciona, mas o frontend não possui interface de login/registro.
+
+**Impacto:** Para demonstração, será necessário usar o script `seed_users.py` para criar usuários de teste e fazer login via API diretamente (ou criar as páginas na FASE 2 se necessário).
+
+---
+
 ## ✅ Funcionalidades Verificadas
 
 ### Backend
