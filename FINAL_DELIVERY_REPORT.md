@@ -153,9 +153,8 @@ cd frontend && npm run dev
 
 **Commit**: "Final delivery: Add case PDF, demo scripts, and submission materials"
 **Branch**: main
-**Push**: origin/main
-
-(SHA será registrado abaixo após o commit)
+**SHA**: 4710725
+**Push**: origin/main — confirmed
 
 ---
 
