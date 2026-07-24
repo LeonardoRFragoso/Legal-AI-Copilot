@@ -17,7 +17,7 @@ Returns aggregated metrics for the authenticated user (ADMIN sees global, others
 ### Core Metrics
 - **documents_total**: Total documents owned by user
 - **analyses_total**: Total analysis records
-- **approval_rate**: Percentage of analyses approved (APPROVED / total * 100)
+- **approval_rate**: Percentage of non-blocked analyses approved (APPROVED / non-blocked total * 100)
 - **average_confidence_score**: Mean confidence score across all analyses
 
 ### Breakdowns

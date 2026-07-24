@@ -49,7 +49,7 @@ Valid transitions are enforced by `validate_transition()` in `analysis_record_se
 ### RBAC
 
 - **ADMIN**: Can view and review all analyses
-- **LAWYER**: Can view and review own analyses (and analyses on documents they own)
+- **LAWYER**: Can view and review own analyses
 - **ASSISTANT**: Can view own analyses, cannot review
 - **CLIENT/VIEWER**: Can view own analyses, cannot review
 

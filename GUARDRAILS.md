@@ -216,16 +216,21 @@ com base nos documentos fornecidos, e não substitui a revisão de um profission
 - ✅ Respostas bloqueadas não expõem conteúdo inseguro
 
 ### Resumo
-- ⚠️ Validação mínima (documento existe?)
-- ⚠️ Implementar na ETAPA 2
+- Validação mínima (documento existe?)
+- Não passa por AIValidator; usa LLM (GPT-4o) diretamente
 
 ### Extração
-- ⚠️ Validação mínima (campos encontrados?)
-- ⚠️ Implementar na ETAPA 2
+- Validação mínima (campos encontrados?)
+- Não passa por AIValidator; usa LLM (GPT-4o) com prompt estruturado
 
 ### Comparação
-- ⚠️ Validação mínima (documentos existem?)
-- ⚠️ Implementar na ETAPA 2
+- Validação mínima (documentos existem?)
+- Não passa por AIValidator; usa LLM (GPT-4o) diretamente
+
+### Análise de Riscos
+- Não usa LLM nem AIValidator
+- Análise heurística determinística (palavras-chave)
+- Confidence score calculado por fórmula própria (não pelo AIValidator)
 
 ---
 
@@ -392,9 +397,7 @@ logger.warning("Validation blocked", extra={
 
 ## Próximas Etapas
 
-- [ ] Integrar validação em Resumo
-- [ ] Integrar validação em Extração
-- [ ] Integrar validação em Comparação
+- [ ] Integrar AIValidator em Resumo, Extração e Comparação
 - [ ] Implementar validação por LLM (opcional)
 - [ ] Adicionar análise de contradição
 - [ ] Implementar cache de validação

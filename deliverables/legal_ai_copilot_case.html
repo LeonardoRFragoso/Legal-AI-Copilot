@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legal AI Copilot — Case Técnico</title>
+<style>
+@page {
+  size: A4;
+  margin: 14mm 14mm 14mm 14mm;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 9pt;
+  line-height: 1.35;
+  color: #1a1a2e;
+  background: #fff;
+}
+
+.page {
+  page-break-after: always;
+  position: relative;
+}
+.page:last-child {
+  page-break-after: auto;
+}
+
+/* Header */
+.header {
+  border-bottom: 2px solid #1e3a5f;
+  padding-bottom: 4px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.header h1 {
+  font-size: 14pt;
+  color: #1e3a5f;
+  font-weight: 700;
+}
+.header .subtitle {
+  font-size: 8pt;
+  color: #666;
+}
+
+/* Footer */
+.footer {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 7pt;
+  color: #999;
+  border-top: 1px solid #eee;
+  padding-top: 3px;
+}
+
+h2 {
+  font-size: 11pt;
+  color: #1e3a5f;
+  margin-top: 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #d0d8e0;
+  padding-bottom: 2px;
+}
+
+h3 {
+  font-size: 9.5pt;
+  color: #2c5282;
+  margin-top: 8px;
+  margin-bottom: 3px;
+}
+
+p {
+  margin-bottom: 4px;
+  text-align: justify;
+}
+
+ul, ol {
+  margin-left: 14px;
+  margin-bottom: 4px;
+}
+
+li {
+  margin-bottom: 1px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4px 0 6px 0;
+  font-size: 8pt;
+}
+
+th {
+  background: #1e3a5f;
+  color: #fff;
+  padding: 3px 5px;
+  text-align: left;
+  font-weight: 600;
+}
+
+td {
+  border: 1px solid #d0d8e0;
+  padding: 3px 5px;
+  vertical-align: top;
+}
+
+tr:nth-child(even) td {
+  background: #f7f9fc;
+}
+
+code {
+  font-family: "Courier New", monospace;
+  font-size: 8.5pt;
+  background: #f0f4f8;
+  padding: 1px 3px;
+  border-radius: 2px;
+}
+
+pre {
+  font-family: "Courier New", monospace;
+  font-size: 7.5pt;
+  background: #f5f7fa;
+  border: 1px solid #e0e6ed;
+  border-radius: 4px;
+  padding: 6px;
+  margin: 4px 0;
+  white-space: pre-wrap;
+  line-height: 1.25;
+}
+
+.highlight {
+  background: #fef9e7;
+  border-left: 3px solid #f0ad4e;
+  padding: 4px 8px;
+  margin: 6px 0;
+  font-size: 8.5pt;
+}
+
+.note {
+  font-size: 8.5pt;
+  color: #666;
+  font-style: italic;
+}
+
+.badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 7.5pt;
+  font-weight: 600;
+}
+.badge-green { background: #d4edda; color: #155724; }
+.badge-red { background: #f8d7da; color: #721c24; }
+.badge-blue { background: #d1ecf1; color: #0c5460; }
+
+.two-col {
+  display: flex;
+  gap: 16px;
+}
+.two-col > div {
+  flex: 1;
+}
+
+a {
+  color: #1e3a5f;
+  text-decoration: none;
+}
+</style>
+</head>
+<body>
+
+<!-- PÁGINA 1 -->
+<div class="page">
+  <div class="header">
+    <h1>Legal AI Copilot</h1>
+    <span class="subtitle">Case Técnico — MVP de IA para Análise Contratual</span>
+  </div>
+
+  <h2>Contexto e Solução</h2>
+
+  <h3>Problema</h3>
+  <p>Escritórios de advocacia gastam horas em revisão manual de contratos para identificar cláusulas de risco, extrair informações estruturadas e comparar documentos. O processo é repetitivo, suscetível a erros e consome tempo que poderia ser dedicado a análise estratégica.</p>
+
+  <h3>Objetivo do MVP</h3>
+  <p>Demonstrar um sistema funcional que acelera a análise contratual com IA, mantendo o profissional jurídico no controle por meio de revisão humana obrigatória.</p>
+
+  <h3>Público-alvo</h3>
+  <p>Advogados, assessores jurídicos e administradores de escritórios de advocacia.</p>
+
+  <h3>Principais Funcionalidades</h3>
+  <ul>
+    <li>Upload de PDF com extração de texto e chunking</li>
+    <li>Chat com agente determinístico (Agent Router) e RAG</li>
+    <li>Resumo, extração e comparação via LLM (GPT-4o)</li>
+    <li>Análise de riscos heurística (palavras-chave, determinística)</li>
+    <li>Guardrails com confidence score, citações e bloqueio de alucinações</li>
+    <li>Automação pós-upload com webhook compatível com n8n</li>
+    <li>Revisão humana com state machine e histórico append-only</li>
+    <li>Métricas de produtividade estimadas</li>
+    <li>RBAC com 5 papéis (ADMIN, LAWYER, ASSISTANT, CLIENT, VIEWER)</li>
+  </ul>
+
+  <h3>Stack</h3>
+  <table>
+    <tr><th>Camada</th><th>Tecnologia</th></tr>
+    <tr><td>Backend</td><td>FastAPI, Python 3.12, SQLAlchemy, Alembic</td></tr>
+    <tr><td>Frontend</td><td>React, TypeScript, Vite, TailwindCSS, Zustand</td></tr>
+    <tr><td>Banco</td><td>SQLite (PostgreSQL recomendado para produção)</td></tr>
+    <tr><td>IA</td><td>OpenAI GPT-4o via LangChain; text-embedding-3-small</td></tr>
+    <tr><td>Auth</td><td>JWT (HS256) + Argon2</td></tr>
+  </table>
+
+  <div class="footer">Legal AI Copilot — Case Técnico · Página 1 de 5</div>
+</div>
+
+<!-- PÁGINA 2 -->
+<div class="page">
+  <div class="header">
+    <h1>Arquitetura e IA</h1>
+    <span class="subtitle">Página 2 de 5</span>
+  </div>
+
+  <h2>Diagrama de Fluxo</h2>
+  <pre>Usuário → Frontend (React) → FastAPI → Agent Router (determinístico)
+    → Tool (Summary/Extract/Compare/Risk/Q&A)
+    → Guardrails (AIValidator) → Persistência (AnalysisRecord)
+    → Revisão Humana (AnalysisReview)</pre>
+
+  <h2>Agent Router — Determinístico</h2>
+  <p>O Agent Router classifica a intenção do usuário por <strong>palavras-chave</strong>, sem chamar LLM. Mapeia para uma de 5 ferramentas. Vantagens: previsibilidade, velocidade e custo zero de tokens.</p>
+
+  <table>
+    <tr><th>Intent</th><th>Tool</th><th>Palavras-chave</th></tr>
+    <tr><td>SUMMARIZE_DOCUMENT</td><td>summarize_document</td><td>resumo, resumir, summarize</td></tr>
+    <tr><td>EXTRACT_INFORMATION</td><td>extract_information</td><td>extrair, extraia, extract, partes</td></tr>
+    <tr><td>COMPARE_DOCUMENTS</td><td>compare_documents</td><td>comparar, compare, diferenças</td></tr>
+    <tr><td>IDENTIFY_RISKS</td><td>contract_risk_analysis</td><td>riscos, risco, risk, perigos</td></tr>
+    <tr><td>QUESTION_ANSWERING</td><td>semantic_search</td><td>qual, o que, quando, how, what</td></tr>
+  </table>
+
+  <h2>Engenharia de Prompts</h2>
+  <p>Prompts estruturados em português (pt-BR) para GPT-4o com temperatura 0.3:</p>
+  <ul>
+    <li><strong>Resumo</strong>: "Faça um resumo detalhado do seguinte documento legal em português"</li>
+    <li><strong>Extração</strong>: Prompt com schema JSON explícito (parties, dates, values, clauses)</li>
+    <li><strong>Comparação</strong>: Prompt comparativo com estrutura de diferenças</li>
+    <li><strong>Q&A</strong>: Via LangChain Agent Executor com histórico e contexto RAG</li>
+  </ul>
+
+  <h2>Ferramentas e Uso de LLM</h2>
+  <table>
+    <tr><th>Ferramenta</th><th>LLM</th><th>RAG</th><th>AIValidator</th></tr>
+    <tr><td>summarize_document</td><td><span class="badge badge-green">Sim (GPT-4o)</span></td><td><span class="badge badge-red">Não</span></td><td><span class="badge badge-red">Não</span></td></tr>
+    <tr><td>extract_information</td><td><span class="badge badge-green">Sim (GPT-4o)</span></td><td><span class="badge badge-red">Não</span></td><td><span class="badge badge-red">Não</span></td></tr>
+    <tr><td>compare_documents</td><td><span class="badge badge-green">Sim (GPT-4o)</span></td><td><span class="badge badge-red">Não</span></td><td><span class="badge badge-red">Não</span></td></tr>
+    <tr><td>contract_risk_analysis</td><td><span class="badge badge-red">Não</span></td><td><span class="badge badge-red">Não</span></td><td><span class="badge badge-red">Não</span></td></tr>
+    <tr><td>semantic_search</td><td><span class="badge badge-green">Sim (GPT-4o)</span></td><td><span class="badge badge-green">Sim</span></td><td><span class="badge badge-green">Sim</span></td></tr>
+  </table>
+
+  <div class="footer">Legal AI Copilot — Case Técnico · Página 2 de 5</div>
+</div>
+
+<!-- PÁGINA 3 -->
+<div class="page">
+  <div class="header">
+    <h1>Documentos, RAG e Controle de Alucinação</h1>
+    <span class="subtitle">Página 3 de 5</span>
+  </div>
+
+  <h2>Pipeline de Documentos</h2>
+  <ol>
+    <li><strong>Upload</strong>: PDF via <code>POST /documents/upload</code></li>
+    <li><strong>Extração</strong>: PyPDF2 (sem OCR)</li>
+    <li><strong>Chunking</strong>: Por sentenças (1000 chars, 200 overlap)</li>
+    <li><strong>Embeddings</strong>: OpenAI text-embedding-3-small, armazenados como binário (pickle)</li>
+    <li><strong>Busca</strong>: Similaridade cosseno entre embedding da query e chunks</li>
+  </ol>
+
+  <h2>RAG — Onde é Usado</h2>
+  <p>O RAG é utilizado <strong>apenas</strong> na ferramenta <code>semantic_search</code> (Q&A via chat):</p>
+  <pre>Pergunta → Embedding → Busca cosseno → Top-K chunks → GPT-4o → Resposta + Citações</pre>
+
+  <h2>Análise de Riscos — Heurística (Separada do RAG)</h2>
+  <p>A análise de riscos é <strong>totalmente determinística</strong>, sem LLM e sem RAG:</p>
+  <ul>
+    <li><strong>Camada 1</strong>: HeuristicAnalyzer — detecta cláusulas ausentes (confidencialidade, LGPD, rescisão) e padrões problemáticos (multa ilimitada, renovação automática, pagamento indefinido) por palavras-chave</li>
+    <li><strong>Camada 2</strong>: Recuperação textual (não semântica) para gerar citações</li>
+    <li><strong>Camada 3</strong>: Scoring — confidence_score (base 50 + riscos + cobertura) e overall_risk (maior severidade)</li>
+  </ul>
+  <div class="highlight">
+    <strong>Importante:</strong> O <code>similarity_score</code> nas citações da análise de riscos é um valor fixo ilustrativo (0.7), não calculado por embeddings.
+  </div>
+
+  <h2>Guardrails (AIValidator)</h2>
+  <p>Aplicado <strong>apenas em Q&A</strong> (<code>semantic_search</code>):</p>
+  <table>
+    <tr><th>Componente</th><th>Pontos</th><th>Critério</th></tr>
+    <tr><td>Fontes</td><td>até 30</td><td>Quantidade de chunks recuperados</td></tr>
+    <tr><td>Similaridade</td><td>até 30</td><td>Score médio de similaridade</td></tr>
+    <tr><td>Citações</td><td>até 20</td><td>Cobertura de citações</td></tr>
+    <tr><td>Consistência</td><td>até 10</td><td>Alinhamento resposta-contexto</td></tr>
+    <tr><td>Qualidade</td><td>até 10</td><td>Significância do contexto</td></tr>
+  </table>
+  <p><strong>Bloqueio</strong>: Score &lt; 60 → resposta bloqueada, conteúdo não exposto. <strong>Disclaimer</strong>: Sempre presente.</p>
+
+  <h2>Limitações</h2>
+  <ul>
+    <li>Sem OCR (apenas PDF com texto extraível)</li>
+    <li>AIValidator não integrado em resumo, extração e comparação</li>
+    <li>Análise de riscos não detecta contradições semânticas</li>
+  </ul>
+
+  <div class="footer">Legal AI Copilot — Case Técnico · Página 3 de 5</div>
+</div>
+
+<!-- PÁGINA 4 -->
+<div class="page">
+  <div class="header">
+    <h1>Automação, Revisão e Segurança</h1>
+    <span class="subtitle">Página 4 de 5</span>
+  </div>
+
+  <h2>Automação Pós-Upload</h2>
+  <p>Após o upload, <code>BackgroundTasks</code> do FastAPI executa:</p>
+  <ol>
+    <li><strong>DOCUMENT_PROCESSING</strong> (10%): Verifica documento</li>
+    <li><strong>SUMMARY</strong> (30-50%): Executa <code>summarize_document</code> (GPT-4o)</li>
+    <li><strong>RISK_ANALYSIS</strong> (70-85%): Executa <code>RiskAnalyzer.analyze()</code> (heurístico)</li>
+    <li><strong>WEBHOOK</strong> (90%): Envia evento <code>analysis.completed</code></li>
+    <li><strong>COMPLETED</strong> (100%): Finaliza AutomationRun</li>
+  </ol>
+
+  <h2>Webhook e n8n</h2>
+  <ul>
+    <li>Webhook HTTP POST com payload estruturado (event, document, analysis)</li>
+    <li>Idempotency key, retry configurável, timeout</li>
+    <li>Workflow n8n de exemplo: <code>n8n/analysis-completed-workflow.json</code></li>
+    <li><strong>Não necessariamente executado em ambiente externo</strong> — workflow de exemplo importável</li>
+  </ul>
+
+  <h2>Revisão Humana</h2>
+  <table>
+    <tr><th>Componente</th><th>Descrição</th></tr>
+    <tr><td>AnalysisRecord</td><td>Persiste toda análise (chat, endpoint, automação)</td></tr>
+    <tr><td>State Machine</td><td>GENERATED → PENDING_REVIEW → APPROVED/REJECTED/NEEDS_CHANGES</td></tr>
+    <tr><td>AnalysisReview</td><td>Histórico append-only (nunca modificado ou deletado)</td></tr>
+    <tr><td>RBAC</td><td>ADMIN revisa tudo; LAWYER revisa próprias; ASSISTANT apenas visualiza</td></tr>
+    <tr><td>Bloqueio</td><td>Análises bloqueadas não podem ser aprovadas</td></tr>
+  </table>
+
+  <h2>Segurança</h2>
+  <table>
+    <tr><th>Aspecto</th><th>Implementação</th></tr>
+    <tr><td>Autenticação</td><td>JWT (HS256), access (30min) + refresh (7 dias)</td></tr>
+    <tr><td>Senhas</td><td>Argon2 via passlib</td></tr>
+    <tr><td>RBAC</td><td>5 papéis com verificação por endpoint</td></tr>
+    <tr><td>Ownership</td><td>Usuários acessam apenas próprios documentos/análises</td></tr>
+    <tr><td>Demo mode</td><td>Credenciais demo só visíveis com <code>VITE_DEMO_MODE=true</code></td></tr>
+    <tr><td>Secrets</td><td><code>.env</code> em <code>.gitignore</code>; nenhum secret versionado</td></tr>
+  </table>
+
+  <h2>Limitação do BackgroundTasks</h2>
+  <div class="highlight">
+    FastAPI <code>BackgroundTasks</code> executa no processo da aplicação. Sem fila externa (Celery/RQ). Em produção com múltiplos workers, tarefas podem ser perdidas em restart. Recomenda-se Celery + Redis para produção.
+  </div>
+
+  <div class="footer">Legal AI Copilot — Case Técnico · Página 4 de 5</div>
+</div>
+
+<!-- PÁGINA 5 -->
+<div class="page">
+  <div class="header">
+    <h1>Resultados, Testes e Próximos Passos</h1>
+    <span class="subtitle">Página 5 de 5</span>
+  </div>
+
+  <h2>Testes</h2>
+  <pre>166 passed, 0 failed</pre>
+  <table>
+    <tr><th>Arquivo</th><th>Cobertura</th></tr>
+    <tr><td>test_auth.py</td><td>JWT, RBAC, login, refresh, logout</td></tr>
+    <tr><td>test_api.py</td><td>Endpoints, auth enforcement</td></tr>
+    <tr><td>test_validators.py</td><td>Extração, resumo, chat, confiança</td></tr>
+    <tr><td>test_agent_router.py</td><td>Classificação de intenção</td></tr>
+    <tr><td>test_agent_chat_integration.py</td><td>Chat end-to-end com LLM mockado</td></tr>
+    <tr><td>test_risk_analysis.py</td><td>Análise heurística de riscos</td></tr>
+    <tr><td>test_automation.py</td><td>Pipeline, webhook, retry</td></tr>
+    <tr><td>test_analysis_review.py</td><td>Records, reviews, state machine, métricas</td></tr>
+    <tr><td>test_demo_smoke.py</td><td>Fluxo completo de demo, guardrails, RBAC</td></tr>
+  </table>
+
+  <h2>Validações</h2>
+  <ul>
+    <li><strong>Migrations</strong>: upgrade/downgrade/re-upgrade validados</li>
+    <li><strong>Frontend</strong>: <code>tsc &amp;&amp; vite build</code> — PASS</li>
+    <li><strong>Smoke tests</strong>: Fluxo completo (auth → upload → análise → revisão → métricas)</li>
+    <li><strong>Git</strong>: <code>git diff --check</code> — sem erros</li>
+  </ul>
+
+  <h2>Métricas Estimadas</h2>
+  <div class="highlight">
+    <strong>Os ganhos de produtividade apresentados são estimativas do MVP e não resultados medidos em produção.</strong>
+  </div>
+  <p>Tempos manuais configuráveis: Resumo (30min), Extração (45min), Comparação (90min), Q&A (15min), Análise de Riscos (120min).</p>
+
+  <h2>Limitações Conhecidas</h2>
+  <ol>
+    <li>Análise de riscos é heurística (sem LLM/RAG semântico)</li>
+    <li><code>similarity_score</code> nas citações de risco é fixo (0.7)</li>
+    <li>Sem OCR</li>
+    <li>Sem refresh token auto-refresh</li>
+    <li>Sem testes frontend automatizados</li>
+    <li>SQLite (PostgreSQL recomendado para produção)</li>
+    <li>AIValidator apenas em Q&A (não em resumo/extração/comparação)</li>
+    <li>BackgroundTasks sem fila externa</li>
+  </ol>
+
+  <h2>Próximos Passos</h2>
+  <ul>
+    <li>Integrar AIValidator em todas as operações com LLM</li>
+    <li>Adicionar RAG semântico à análise de riscos</li>
+    <li>Migrar para PostgreSQL + Celery</li>
+    <li>Implementar OCR</li>
+    <li>Calibrar métricas com dados reais</li>
+    <li>Adicionar testes frontend (Vitest/Playwright)</li>
+  </ul>
+
+  <h2>GitHub</h2>
+  <p><a href="https://github.com/LeonardoRFragoso/Legal-AI-Copilot">https://github.com/LeonardoRFragoso/Legal-AI-Copilot</a></p>
+
+  <div class="footer">Legal AI Copilot — Case Técnico · Página 5 de 5</div>
+</div>
+
+</body>
+</html>
