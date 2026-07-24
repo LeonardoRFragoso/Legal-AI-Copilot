@@ -7,8 +7,10 @@ from passlib.context import CryptContext
 import os
 from app.database import get_db
 from app.models import User, UserRole
+from app.config import get_settings
 
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+settings = get_settings()
+SECRET_KEY = settings.secret_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7

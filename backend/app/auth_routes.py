@@ -6,16 +6,16 @@ from app.schemas import UserRegister, UserLogin, TokenResponse, RefreshTokenRequ
 from app.repositories import UserRepository
 from app.auth import (
     hash_password, verify_password, create_access_token, create_refresh_token,
-    get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
+    get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM
 )
+from app.config import get_settings
 from app.models import User, UserRole
 import jwt
-import os
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
-ALGORITHM = "HS256"
+settings = get_settings()
+SECRET_KEY = settings.secret_key
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -30,15 +30,15 @@ def register(user_data: UserRegister, db: Session = Depends(get_db)):
             detail="Email already registered"
         )
     
-    # Create new user
+    # Create new user with CLIENT role (default for public registration)
+    # Only ADMIN can assign privileged roles (LAWYER, ASSISTANT, ADMIN)
     password_hash = hash_password(user_data.password)
-    role = UserRole(user_data.role.value) if user_data.role else UserRole.VIEWER
     
     user = user_repo.create(
         name=user_data.name,
         email=user_data.email,
         password_hash=password_hash,
-        role=role
+        role=UserRole.CLIENT
     )
     
     return user

@@ -94,7 +94,7 @@ def test_register_user():
     data = response.json()
     assert data["email"] == "test@example.com"
     assert data["name"] == "Test User"
-    assert data["role"] == "viewer"
+    assert data["role"] == "client"  # Public registration gets CLIENT role
     assert data["is_active"] is True
 
 
@@ -307,20 +307,19 @@ def test_protected_endpoint_with_invalid_token():
 
 
 def test_rbac_lawyer_access():
-    """Testa acesso de usuário LAWYER"""
-    # Registrar como LAWYER
+    """Testa acesso de usuário LAWYER (criado com role CLIENT via registro público)"""
+    # Registrar como CLIENT (role padrão para público)
     register_response = client.post(
         "/auth/register",
         json={
             "name": "Lawyer User",
             "email": "lawyer@example.com",
-            "password": "TestPass123",
-            "role": "lawyer"
+            "password": "TestPass123"
         }
     )
     
     assert register_response.status_code == 201
-    assert register_response.json()["role"] == "lawyer"
+    assert register_response.json()["role"] == "client"  # Público recebe CLIENT
     
     # Login
     login_response = client.post(
@@ -333,7 +332,7 @@ def test_rbac_lawyer_access():
     
     access_token = login_response.json()["access_token"]
     
-    # Acessar endpoint protegido
+    # Acessar endpoint protegido (GET /documents funciona para CLIENT)
     response = client.get(
         "/documents",
         headers={"Authorization": f"Bearer {access_token}"}
@@ -344,7 +343,7 @@ def test_rbac_lawyer_access():
 
 def test_rbac_viewer_cannot_upload():
     """Testa que VIEWER não pode fazer upload"""
-    # Registrar como VIEWER (default)
+    # Registrar como CLIENT (default para público)
     client.post(
         "/auth/register",
         json={
@@ -373,3 +372,60 @@ def test_rbac_viewer_cannot_upload():
     )
     
     assert response.status_code == 403
+
+
+def test_public_registration_cannot_get_admin_role():
+    """Testa que registro público não pode criar ADMIN"""
+    response = client.post(
+        "/auth/register",
+        json={
+            "name": "Hacker",
+            "email": "hacker@example.com",
+            "password": "TestPass123",
+            "role": "admin"  # Tentativa de escalação
+        }
+    )
+    
+    # Deve ignorar o campo role ou retornar erro
+    # Se aceitar, deve criar com CLIENT role
+    assert response.status_code == 201
+    data = response.json()
+    assert data["role"] == "client"  # Deve ser CLIENT, não admin
+
+
+def test_public_registration_cannot_get_lawyer_role():
+    """Testa que registro público não pode criar LAWYER"""
+    response = client.post(
+        "/auth/register",
+        json={
+            "name": "Fake Lawyer",
+            "email": "fakelawyer@example.com",
+            "password": "TestPass123",
+            "role": "lawyer"  # Tentativa de escalação
+        }
+    )
+    
+    # Deve ignorar o campo role ou retornar erro
+    # Se aceitar, deve criar com CLIENT role
+    assert response.status_code == 201
+    data = response.json()
+    assert data["role"] == "client"  # Deve ser CLIENT, não lawyer
+
+
+def test_public_registration_cannot_get_assistant_role():
+    """Testa que registro público não pode criar ASSISTANT"""
+    response = client.post(
+        "/auth/register",
+        json={
+            "name": "Fake Assistant",
+            "email": "fakeassistant@example.com",
+            "password": "TestPass123",
+            "role": "assistant"  # Tentativa de escalação
+        }
+    )
+    
+    # Deve ignorar o campo role ou retornar erro
+    # Se aceitar, deve criar com CLIENT role
+    assert response.status_code == 201
+    data = response.json()
+    assert data["role"] == "client"  # Deve ser CLIENT, não assistant
