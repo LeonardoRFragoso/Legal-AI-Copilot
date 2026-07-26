@@ -450,3 +450,48 @@ class TestUnifiedRAGPipeline:
             call_args = mock_agent.answer_with_context.call_args
             assert call_args[0][0] == query  # First positional arg is query
             assert call_args[0][1] == expected_context  # Second positional arg is context
+
+    def test_answer_with_context_direct(self):
+        """Test LegalAgent.answer_with_context() directly without tools."""
+        from app.legal_agent import LegalAgent
+        from langchain_core.messages import AIMessage
+        
+        # Create a real LegalAgent instance with mocked LLM
+        with patch('app.legal_agent.ChatOpenAI') as MockChatOpenAI:
+            mock_llm = Mock()
+            MockChatOpenAI.return_value = mock_llm
+            
+            # Mock the LLM response
+            mock_response = Mock()
+            mock_response.content = "O valor é R$ 50.000,00"
+            mock_llm.invoke.return_value = mock_response
+            
+            # Create agent
+            agent = LegalAgent()
+            agent.llm = mock_llm
+            agent.agent_executor = Mock()  # Mock the agent executor
+            
+            # Call answer_with_context
+            query = "Qual é o valor?"
+            context = "O contrato tem valor de R$ 50.000,00"
+            response = agent.answer_with_context(query, context, [])
+            
+            # Verify LLM was called
+            mock_llm.invoke.assert_called_once()
+            
+            # Verify agent_executor was NOT called
+            agent.agent_executor.invoke.assert_not_called()
+            
+            # Verify response is correct
+            assert response == "O valor é R$ 50.000,00"
+            
+            # Verify the context appeared in the system message
+            call_args = mock_llm.invoke.call_args
+            messages = call_args[0][0]
+            
+            # First message should be system message with context
+            assert messages[0].content is not None
+            assert context in messages[0].content
+            
+            # Last message should be human message with query
+            assert messages[-1].content == query

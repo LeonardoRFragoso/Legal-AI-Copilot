@@ -42,7 +42,7 @@ def demo_question_with_evidence():
     """Demo: Question with evidence."""
     print_section("DEMO 1: Pergunta com Evidência")
     
-    # Create mock chunks
+    # Create mock chunks with simulated scores for deterministic testing
     chunks = [
         RetrievedChunk(
             chunk_id="chunk_001",
@@ -50,7 +50,7 @@ def demo_question_with_evidence():
             document_title="Contrato de Serviços",
             page_number=1,
             text="O valor total do contrato é R$ 50.000,00 (cinquenta mil reais), a ser pago em 5 parcelas mensais iguais.",
-            similarity_score=0.87,
+            similarity_score=0.87,  # Simulated score for deterministic test
         ),
         RetrievedChunk(
             chunk_id="chunk_002",
@@ -58,7 +58,7 @@ def demo_question_with_evidence():
             document_title="Contrato de Serviços",
             page_number=2,
             text="O prazo de execução é de 30 dias corridos a partir da data de assinatura do contrato.",
-            similarity_score=0.72,
+            similarity_score=0.72,  # Simulated score for deterministic test
         ),
         RetrievedChunk(
             chunk_id="chunk_003",
@@ -66,7 +66,7 @@ def demo_question_with_evidence():
             document_title="Contrato de Serviços",
             page_number=3,
             text="As partes concordam em manter sigilo sobre os termos e condições deste contrato.",
-            similarity_score=0.65,
+            similarity_score=0.65,  # Simulated score for deterministic test
         ),
     ]
     
@@ -117,9 +117,9 @@ def demo_question_with_evidence():
     print_result("Resposta gerada", "O valor total do contrato é R$ 50.000,00, a ser pago em 5 parcelas mensais iguais.")
     print()
     
-    # Simulate confidence score calculation
+    # Simulate confidence score calculation (deterministic test value)
     confidence_score = 85
-    print_result("Score de confiança", f"{confidence_score} (HIGH)")
+    print_result("Score de confiança", f"{confidence_score} (HIGH) - Simulado para teste")
     print_result("Citações válidas", len(citations))
     print_result("Bloqueada", "NÃO")
     print()

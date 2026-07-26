@@ -54,8 +54,8 @@ Iguais: ✅ SIM
 | Tipo de execução | Mock determinístico | RESULTADO DE TESTE COM MOCKS DETERMINÍSTICOS |
 | Pergunta | "Qual é o valor total do contrato?" | Exemplo |
 | Chunks | 3 recuperados | chunk_001, chunk_002, chunk_003 |
-| Scores | 0.87, 0.72, 0.65 | Reais (similaridade cosseno) |
-| Score final | 85 (HIGH) | Heurístico baseado em evidências |
+| Scores | 0.87, 0.72, 0.65 | Simulados para teste determinístico |
+| Score final | 85 (HIGH) | Score heurístico simulado |
 | LLM chamado | SIM | Após validação de chunks |
 | Bloqueada | NÃO | Resposta liberada com citações |
 
