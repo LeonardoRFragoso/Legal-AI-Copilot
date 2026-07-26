@@ -310,16 +310,79 @@ class LegalAgent:
                 handle_parsing_errors=True
             )
     
-    def query(self, query: str, chat_history: list = None, document_id: str = None) -> dict:
+    def answer_with_context(
+        self,
+        query: str,
+        context: str,
+        chat_history: list = None,
+    ) -> str:
         """
-        Execute a query using the LangChain agent.
+        Answer a question using provided context WITHOUT tools.
         
-        Note: Citations are NOT extracted here. They are built from the RAG chunks
-        in the RAGService and passed to the validator. This ensures citations
-        are always traceable to actual retrieved chunks.
+        This method is used in the unified RAG pipeline to ensure:
+        - No additional retrievals are performed
+        - The model uses exactly the provided context
+        - Citations are traceable to the retrieved chunks
         
         Args:
-            query: The user query (may include context from RAGService.build_context)
+            query: The user question
+            context: Pre-formatted context from RAGService.build_context()
+            chat_history: Previous messages in the conversation
+            
+        Returns:
+            The model's response as a string
+        """
+        if not self.llm:
+            raise ValueError("OPENAI_API_KEY not configured")
+        
+        if chat_history is None:
+            chat_history = []
+        
+        from langchain_core.messages import HumanMessage, SystemMessage
+        
+        system_prompt = """Você é um assistente de Legal AI Copilot especializado em análise de contratos.
+
+REGRAS IMPORTANTES:
+- Sempre baseie suas respostas APENAS no contexto fornecido abaixo
+- Se a informação não for encontrada no contexto, diga "Não encontrei essa informação no documento fornecido."
+- Nunca invente ou alucine informações
+- Sempre cite o documento de origem e o número da página ao fornecer informações
+- Seja preciso e profissional em suas respostas
+- SEMPRE responda em português (pt-BR)
+
+CONTEXTO FORNECIDO:
+{context}"""
+        
+        messages = [
+            SystemMessage(content=system_prompt.format(context=context))
+        ]
+        
+        # Add chat history
+        for msg in chat_history:
+            if isinstance(msg, dict):
+                if msg.get("role") == "user":
+                    messages.append(HumanMessage(content=msg.get("content", "")))
+                elif msg.get("role") == "assistant":
+                    from langchain_core.messages import AIMessage
+                    messages.append(AIMessage(content=msg.get("content", "")))
+        
+        # Add current question
+        messages.append(HumanMessage(content=query))
+        
+        # Call LLM directly without tools
+        response = self.llm.invoke(messages)
+        
+        return response.content
+    
+    def query(self, query: str, chat_history: list = None, document_id: str = None) -> dict:
+        """
+        Execute a query using the LangChain agent with tools.
+        
+        Note: This method is kept for backward compatibility and other use cases.
+        For the unified RAG pipeline, use answer_with_context() instead.
+        
+        Args:
+            query: The user query
             chat_history: Previous messages in the conversation
             document_id: Optional document ID for context
             

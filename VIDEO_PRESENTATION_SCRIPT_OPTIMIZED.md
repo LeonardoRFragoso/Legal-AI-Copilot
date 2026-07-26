@@ -30,7 +30,7 @@
 
 [AÇÃO: Upload de PDF, aguardar processamento]
 
-"Vou fazer upload de um contrato. O sistema extrai o texto automaticamente, divide em chunks de tamanho inteligente, e gera embeddings — representações vetoriais que capturam o significado semântico. Esses embeddings são armazenados no banco junto com os chunks. Tudo isso acontece de forma assíncrona, então o usuário não fica esperando. Após o processamento, o documento está pronto para análise."
+"Vou fazer upload de um contrato. O sistema extrai o texto automaticamente, divide em chunks de tamanho inteligente, e gera embeddings — representações vetoriais que capturam o significado semântico. Durante a requisição de upload, o backend extrai o texto, cria os chunks e gera os embeddings. Após essa etapa, uma tarefa em segundo plano gera o resumo, executa a análise de riscos e tenta enviar o webhook configurado. Após o processamento, o documento está pronto para análise."
 
 ---
 
@@ -42,7 +42,7 @@
 
 O modelo gera a resposta, que passa por validação. O sistema verifica se existem chunks recuperados, se a resposta cita as fontes, se o score de similaridade é adequado, e se a confiança é suficiente.
 
-A resposta é retornada com um score de confiança — neste caso, 85 pontos, o que significa alta sustentação documental. As citações mostram exatamente de qual trecho do documento a resposta foi extraída. Isso é crucial em contexto jurídico — o profissional pode verificar a fonte imediatamente.
+A resposta é retornada com um score calculado para esta execução. O valor varia conforme a quantidade, a similaridade e a qualidade das evidências recuperadas. As citações mostram os chunks recuperados como fontes documentais utilizadas no contexto da resposta. Isso é crucial em contexto jurídico — o profissional pode verificar a fonte imediatamente.
 
 Se a pergunta não tiver resposta no documento, o sistema bloqueia a resposta e diz 'Não encontrei evidências suficientes'. Isso reduz alucinações porque o modelo só pode responder baseado no contexto recuperado."
 
@@ -76,7 +76,9 @@ Todas essas análises são persistidas em um banco de dados com histórico compl
 
 "A engenharia de prompts é crítica nesta solução. O prompt define um contrato de comportamento com o modelo. Ele diz: 'Responda baseado apenas nas informações fornecidas. Se a informação não estiver disponível, diga que não encontrou.' Cada palavra importa.
 
-O sistema implementa guardrails — validações determinísticas que bloqueiam respostas sem evidência suficiente. O score de confiança é calculado baseado em cinco componentes: quantidade de chunks recuperados, similaridade média, quantidade de citações, consistência entre resposta e contexto, e qualidade do contexto.
+O fluxo principal usa um roteador determinístico para classificar a intenção. Para perguntas sobre o documento, um serviço RAG recupera os chunks uma única vez e chama diretamente o modelo com esse contexto, sem permitir uma nova seleção de ferramentas. A camada de agente LangChain permanece disponível na arquitetura, mas o fluxo de QA utiliza uma execução controlada para garantir rastreabilidade.
+
+O sistema implementa guardrails — validações determinísticas que bloqueiam respostas sem evidência suficiente. O indicador de confiança é calculado como um indicador heurístico baseado na quantidade, similaridade e cobertura das evidências recuperadas.
 
 Se o score cair abaixo de 60 pontos, a resposta é bloqueada. Melhor dizer 'não sei' do que inventar uma resposta que pode ter consequências legais."
 
@@ -124,7 +126,7 @@ TOTAL: 970 palavras ≈ 8 minutos (a 120 WPM)
 ## Sequência Exata de Cliques
 
 ### 1. Login
-1. Abrir `http://localhost:5173`
+1. Abrir `http://localhost:3000`
 2. Clicar em "Entrar"
 3. Email: `lawyer@demo.com`
 4. Senha: `demo123456`
@@ -132,10 +134,10 @@ TOTAL: 970 palavras ≈ 8 minutos (a 120 WPM)
 6. Aguardar carregamento do dashboard
 
 ### 2. Upload
-1. Clicar em "Novo Documento" ou "Upload"
+1. Clicar em "Upload PDF"
 2. Selecionar `Contrato_Prestacao_Servicos_Teste.pdf`
 3. Título: "Contrato de Prestação de Serviços"
-4. Clicar em "Enviar"
+4. Clicar em "Fazer Upload"
 5. Aguardar status mudar para "Processado" (2-3 segundos)
 
 ### 3. Chat
@@ -144,22 +146,22 @@ TOTAL: 970 palavras ≈ 8 minutos (a 120 WPM)
 3. Digitar: "Qual é o valor total do contrato?"
 4. Clicar em "Enviar"
 5. Aguardar resposta (3-5 segundos)
-6. Mostrar score de confiança e citações
+6. Mostrar score de confiança e chunks recuperados como fontes
 
 ### 4. Análise de Riscos
-1. Clicar em "Análise de Riscos"
+1. Clicar em "Riscos"
 2. Clicar em "Analisar"
 3. Aguardar resultado (1-2 segundos)
 4. Mostrar lista de riscos
 
 ### 5. Extração
-1. Clicar em "Extração"
+1. Clicar em "Análise"
 2. Clicar em "Extrair"
 3. Aguardar resultado (3-5 segundos)
 4. Mostrar JSON estruturado
 
 ### 6. Comparação
-1. Clicar em "Comparação"
+1. Clicar em "Revisões"
 2. Selecionar segundo contrato
 3. Clicar em "Comparar"
 4. Mostrar diferenças
@@ -198,9 +200,9 @@ TOTAL: 970 palavras ≈ 8 minutos (a 120 WPM)
 |----------|---------|---|
 | Qual LLM? | Chat RAG | GPT-4o, temperatura 0.3 |
 | Engenharia de Prompts? | Seção 8 | Prompt estruturado com regras de rastreabilidade |
-| Como o agente decide? | Chat RAG | Recupera chunks, envia ao modelo com contexto |
-| Como estruturar RAG jurídico? | Chat RAG | Embeddings + busca semântica + validação |
-| Como evita alucinações? | Guardrails | Score de confiança, bloqueio se < 60 |
+| Como o agente decide? | Chat RAG | Roteador determinístico classifica intenção, RAG recupera chunks uma única vez |
+| Como estruturar RAG jurídico? | Chat RAG | Embeddings + busca semântica + validação com chunks recuperados |
+| Como evita alucinações? | Guardrails | Indicador heurístico de confiança, bloqueio se < 60 |
 | Como monitora falhas? | Logging | Logs estruturados em JSON |
 | Cuidados de segurança? | Revisão | JWT, RBAC, ownership enforcement |
 

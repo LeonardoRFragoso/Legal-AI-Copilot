@@ -22,6 +22,16 @@ import pickle
 settings = get_settings()
 
 
+class RAGProviderUnavailableError(Exception):
+    """Raised when the embedding provider is unavailable (e.g., API key invalid, timeout)."""
+    pass
+
+
+class RAGRetrievalError(Exception):
+    """Raised when retrieval fails for other reasons (e.g., database error)."""
+    pass
+
+
 @dataclass
 class RetrievedChunk:
     """Represents a single chunk retrieved from the RAG pipeline."""
@@ -67,21 +77,38 @@ class RAGService:
 
         Returns:
             List of RetrievedChunk objects sorted by similarity (descending)
+            
+        Raises:
+            RAGProviderUnavailableError: If embedding provider is unavailable (API key, timeout, etc.)
+            RAGRetrievalError: If retrieval fails for other reasons (database error, etc.)
         """
         try:
             from app.embedding_service import EmbeddingService
             embedding_service = EmbeddingService()
 
             # Generate query embedding
-            query_embedding = embedding_service.generate_embedding(query)
+            try:
+                query_embedding = embedding_service.generate_embedding(query)
+            except Exception as e:
+                # Check if it's an authentication or provider error
+                error_str = str(e).lower()
+                if "api" in error_str or "authentication" in error_str or "401" in error_str or "timeout" in error_str:
+                    logger.error(f"RAG provider unavailable: {str(e)}")
+                    raise RAGProviderUnavailableError(f"Embedding provider unavailable: {str(e)}")
+                else:
+                    raise
 
             # Retrieve embeddings from database
-            embeddings_query = self.db.query(DocumentEmbedding)
+            try:
+                embeddings_query = self.db.query(DocumentEmbedding)
 
-            if document_id:
-                embeddings_query = embeddings_query.filter(DocumentEmbedding.document_id == document_id)
+                if document_id:
+                    embeddings_query = embeddings_query.filter(DocumentEmbedding.document_id == document_id)
 
-            embeddings = embeddings_query.all()
+                embeddings = embeddings_query.all()
+            except Exception as e:
+                logger.error(f"Database retrieval failed: {str(e)}")
+                raise RAGRetrievalError(f"Database retrieval failed: {str(e)}")
 
             results = []
             for emb in embeddings:
@@ -110,9 +137,12 @@ class RAGService:
             results.sort(key=lambda x: x.similarity_score, reverse=True)
             return results[: self.top_k]
 
+        except (RAGProviderUnavailableError, RAGRetrievalError):
+            # Re-raise our custom exceptions
+            raise
         except Exception as e:
             logger.error(f"RAG retrieval failed: {str(e)}", exc_info=True)
-            return []
+            raise RAGRetrievalError(f"Unexpected retrieval error: {str(e)}")
 
     def build_context(self, chunks: List[RetrievedChunk]) -> str:
         """

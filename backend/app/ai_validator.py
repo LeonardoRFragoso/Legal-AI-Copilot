@@ -402,10 +402,6 @@ class AIValidator:
                 (c for c in retrieved_chunks if c.get("chunk_id") == chunk_id), None
             )
 
-            excerpt = citation.get("text", "")
-            if len(excerpt) > self.max_excerpt_length:
-                excerpt = excerpt[: self.max_excerpt_length - 3] + "..."
-
             # Only add citation if matching chunk exists (validation)
             if not matching_chunk:
                 logger.warning(f"Citation chunk_id {chunk_id} not found in retrieved chunks")
@@ -415,6 +411,18 @@ class AIValidator:
             if matching_chunk.get("document_id") != citation.get("document_id"):
                 logger.warning(f"Citation document_id mismatch for chunk_id {chunk_id}")
                 continue
+            
+            # Get excerpt from citation or fall back to chunk text
+            excerpt = citation.get("excerpt") or matching_chunk.get("text", "")
+            
+            # Validate excerpt is not empty
+            if not excerpt:
+                logger.warning(f"Citation excerpt empty for chunk_id {chunk_id}")
+                continue
+            
+            # Limit excerpt length
+            if len(excerpt) > self.max_excerpt_length:
+                excerpt = excerpt[: self.max_excerpt_length - 3] + "..."
             
             source = CitationSource(
                 document_id=citation.get("document_id", ""),

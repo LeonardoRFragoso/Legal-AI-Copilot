@@ -103,3 +103,9 @@ secrets.json
 # Misc
 .env.example.local
 config.local.json
+
+# Recordings and test artifacts
+recordings/
+*.mp4
+backend/test_results.txt
+backend/.env

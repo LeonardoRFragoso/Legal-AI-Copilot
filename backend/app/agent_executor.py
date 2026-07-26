@@ -21,7 +21,7 @@ from app.agent_router import LegalAgentRouter, AgentIntent, RouterDecision
 from app.risk_analysis import RiskAnalyzer, RiskAnalysisResult
 from app.ai_validator import AIValidator, CitationSource
 from app.legal_agent import LegalAgent
-from app.rag_service import RAGService, RetrievedChunk
+from app.rag_service import RAGService, RetrievedChunk, RAGProviderUnavailableError, RAGRetrievalError
 from app.logger import logger
 
 router = LegalAgentRouter()
@@ -196,7 +196,34 @@ def execute_question_answering(
     try:
         # Step 1: Retrieve chunks once
         rag_service = RAGService(db)
-        retrieved_chunks = rag_service.retrieve(query, document_id)
+        try:
+            retrieved_chunks = rag_service.retrieve(query, document_id)
+        except RAGProviderUnavailableError as e:
+            duration_ms = int((time.time() - start) * 1000)
+            logger.error(f"RAG provider unavailable: {str(e)}", extra={
+                "tool": "semantic_search", "duration_ms": duration_ms
+            })
+            return {
+                "content": "O serviço de análise está temporariamente indisponível. Por favor, tente novamente em alguns momentos.",
+                "structured_data": None,
+                "validation": None,
+                "citations": [],
+                "blocked": True,
+                "error": "AI_PROVIDER_UNAVAILABLE",
+            }
+        except RAGRetrievalError as e:
+            duration_ms = int((time.time() - start) * 1000)
+            logger.error(f"RAG retrieval error: {str(e)}", extra={
+                "tool": "semantic_search", "duration_ms": duration_ms
+            })
+            return {
+                "content": "Erro ao recuperar informações dos documentos. Por favor, tente novamente.",
+                "structured_data": None,
+                "validation": None,
+                "citations": [],
+                "blocked": True,
+                "error": "RAG_RETRIEVAL_FAILED",
+            }
 
         # Step 2: Block immediately if no evidence
         if not retrieved_chunks:
@@ -218,10 +245,8 @@ def execute_question_answering(
         # Step 3: Build context from chunks
         context = rag_service.build_context(retrieved_chunks)
 
-        # Step 4: Call LLM with context
-        # Prepare input with context
-        input_with_context = f"{query}\n\nContexto dos documentos:\n{context}"
-        result = legal_agent.query(input_with_context, chat_history, document_id)
+        # Step 4: Call LLM with context (WITHOUT tools to guarantee single retrieval)
+        response_text = legal_agent.answer_with_context(query, context, chat_history)
 
         # Step 5: Build citations from chunks (not from LLM output)
         citations_from_chunks = rag_service.build_citations(retrieved_chunks)
@@ -229,7 +254,7 @@ def execute_question_answering(
         # Step 6: Validate with same chunks and citations
         validator = AIValidator.get_default_validator()
         validated = validator.validate(
-            response_content=result["response"],
+            response_content=response_text,
             retrieved_chunks=[c.to_dict() for c in retrieved_chunks],
             citations=citations_from_chunks,
             document_title=document_id or "Documento",
