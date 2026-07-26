@@ -104,7 +104,7 @@ class TestAIValidator:
         """Test validation of empty response."""
         result = validator.validate(
             response_content="",
-            retrieved_chunks=[{"id": "chunk1", "text": "Some text"}],
+            retrieved_chunks=[{"chunk_id": "chunk1", "text": "Some text", "document_id": "doc1", "document_title": "Test"}],
         )
 
         assert result.blocked is True
@@ -128,13 +128,17 @@ class TestAIValidator:
         """Test validation with good sources."""
         chunks = [
             {
-                "id": "chunk1",
+                "chunk_id": "chunk1",
+                "document_id": "doc1",
+                "document_title": "Test Doc",
                 "text": "This is a long chunk with meaningful content about contracts",
                 "similarity_score": 0.85,
                 "page_number": 1,
             },
             {
-                "id": "chunk2",
+                "chunk_id": "chunk2",
+                "document_id": "doc1",
+                "document_title": "Test Doc",
                 "text": "Another relevant chunk with important information",
                 "similarity_score": 0.80,
                 "page_number": 2,
@@ -171,7 +175,9 @@ class TestAIValidator:
         # Test with many good chunks
         chunks = [
             {
-                "id": f"chunk{i}",
+                "chunk_id": f"chunk{i}",
+                "document_id": "doc1",
+                "document_title": "Test",
                 "text": "A" * 100,
                 "similarity_score": 0.95,
             }
@@ -189,7 +195,9 @@ class TestAIValidator:
         """Test that duplicate citations are removed."""
         chunks = [
             {
-                "id": "chunk1",
+                "chunk_id": "chunk1",
+                "document_id": "doc1",
+                "document_title": "Test",
                 "text": "Content",
                 "similarity_score": 0.85,
             }
@@ -223,7 +231,9 @@ class TestAIValidator:
         long_text = "A" * 500
         chunks = [
             {
-                "id": "chunk1",
+                "chunk_id": "chunk1",
+                "document_id": "doc1",
+                "document_title": "Test",
                 "text": long_text,
                 "similarity_score": 0.85,
             }

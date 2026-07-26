@@ -21,6 +21,7 @@ from app.agent_router import LegalAgentRouter, AgentIntent, RouterDecision
 from app.risk_analysis import RiskAnalyzer, RiskAnalysisResult
 from app.ai_validator import AIValidator, CitationSource
 from app.legal_agent import LegalAgent
+from app.rag_service import RAGService, RetrievedChunk
 from app.logger import logger
 
 router = LegalAgentRouter()
@@ -175,52 +176,62 @@ def execute_question_answering(
     document_id: Optional[str],
     legal_agent: LegalAgent,
 ) -> Dict:
-    """Execute question answering via RAG and return result with validation."""
+    """
+    Execute question answering via RAG with single retrieval.
+    
+    Flow:
+    1. Retrieve chunks once
+    2. Block immediately if no evidence
+    3. Build context from chunks
+    4. Call LLM with context
+    5. Build citations from chunks
+    6. Validate with same chunks and citations
+    7. Return result
+    """
     start = time.time()
     logger.info("agent_tool_started", extra={
         "tool": "semantic_search", "document_id": document_id or "none"
     })
 
     try:
-        # Execute RAG query
-        result = legal_agent.query(query, chat_history, document_id)
+        # Step 1: Retrieve chunks once
+        rag_service = RAGService(db)
+        retrieved_chunks = rag_service.retrieve(query, document_id)
 
-        # Validate with guardrails
+        # Step 2: Block immediately if no evidence
+        if not retrieved_chunks:
+            duration_ms = int((time.time() - start) * 1000)
+            logger.info("agent_tool_completed", extra={
+                "tool": "semantic_search", "document_id": document_id or "none",
+                "duration_ms": duration_ms, "blocked": True,
+                "chunks_retrieved": 0, "reason": "NO_CHUNKS_ABOVE_THRESHOLD"
+            })
+            return {
+                "content": "Não encontrei evidências suficientes nos documentos selecionados para responder com segurança.",
+                "structured_data": None,
+                "validation": None,
+                "citations": [],
+                "blocked": True,
+                "error": "NO_EVIDENCE",
+            }
+
+        # Step 3: Build context from chunks
+        context = rag_service.build_context(retrieved_chunks)
+
+        # Step 4: Call LLM with context
+        # Prepare input with context
+        input_with_context = f"{query}\n\nContexto dos documentos:\n{context}"
+        result = legal_agent.query(input_with_context, chat_history, document_id)
+
+        # Step 5: Build citations from chunks (not from LLM output)
+        citations_from_chunks = rag_service.build_citations(retrieved_chunks)
+
+        # Step 6: Validate with same chunks and citations
         validator = AIValidator.get_default_validator()
-
-        # Retrieve chunks using real semantic search
-        retrieved_chunks = []
-        if document_id:
-            # Use SearchTool's structured method to get real similarity scores
-            search_tool = legal_agent.tools[0]  # SearchTool is first
-            if hasattr(search_tool, '_run_structured'):
-                structured_results = search_tool._run_structured(query, document_id)
-                retrieved_chunks = structured_results
-            else:
-                # Fallback: retrieve all chunks with placeholder scores
-                doc = db.query(Document).filter(Document.id == document_id).first()
-                if doc:
-                    chunks = db.query(Chunk).filter(Chunk.document_id == document_id).all()
-                    for chunk in chunks:
-                        retrieved_chunks.append({
-                            "id": chunk.id,
-                            "text": chunk.text,
-                            "page_number": chunk.page_number,
-                            "similarity_score": 0.0,  # Unknown score
-                            "document_id": doc.id,
-                            "document_title": doc.title,
-                        })
-
-        citations_data = []
-        if result.get("citations"):
-            for citation in result["citations"]:
-                if isinstance(citation, dict):
-                    citations_data.append(citation)
-
         validated = validator.validate(
             response_content=result["response"],
-            retrieved_chunks=retrieved_chunks,
-            citations=citations_data,
+            retrieved_chunks=[c.to_dict() for c in retrieved_chunks],
+            citations=citations_from_chunks,
             document_title=document_id or "Documento",
         )
 
@@ -232,6 +243,7 @@ def execute_question_answering(
             "confidence_score": validated.validation.confidence_score
         })
 
+        # Step 7: Return result
         final_content = validated.content if not validated.blocked else validated.block_reason
 
         return {

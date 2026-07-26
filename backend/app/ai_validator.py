@@ -198,26 +198,42 @@ class AIValidator:
                 block_reason,
             )
 
-        # Calculate confidence score based on evidence
-        score_breakdown = self._calculate_confidence_score(
-            retrieved_chunks, citations
-        )
-        confidence_score = score_breakdown["total"]
-        validation_reasons.extend(score_breakdown["reasons"])
-
-        # Process citations
+        # Step 1: Process and validate citations BEFORE calculating score
         if citations:
             citations_list = self._process_citations(
                 citations, retrieved_chunks, document_title
             )
-
-        # Check citation requirements
+        
+        # Step 2: Check citation requirements BEFORE calculating score
         if len(citations_list) < self.min_citations:
             validation_reasons.append(
                 f"Número insuficiente de citações ({len(citations_list)}/{self.min_citations})"
             )
             evidence_sufficient = False
-            hallucination_risk = "MEDIUM"
+            blocked = True
+            block_reason = "Não encontrei evidências suficientes nos documentos selecionados para responder com segurança."
+            hallucination_risk = "HIGH"
+            confidence_score = 0
+            logger.warning(
+                f"Validation blocked: insufficient citations {len(citations_list)}/{self.min_citations}"
+            )
+            return self._create_response(
+                response_content,
+                confidence_score,
+                evidence_sufficient,
+                hallucination_risk,
+                validation_reasons,
+                citations_list,
+                blocked,
+                block_reason,
+            )
+
+        # Step 3: Calculate confidence score based on VALID evidence
+        score_breakdown = self._calculate_confidence_score(
+            retrieved_chunks, citations_list
+        )
+        confidence_score = score_breakdown["total"]
+        validation_reasons.extend(score_breakdown["reasons"])
 
         # Determine hallucination risk
         if confidence_score >= 80:
@@ -227,7 +243,7 @@ class AIValidator:
         else:
             hallucination_risk = "HIGH"
 
-        # Block if confidence is too low
+        # Step 4: Block if confidence is too low
         if confidence_score < self.min_confidence_score:
             evidence_sufficient = False
             blocked = True
@@ -248,10 +264,12 @@ class AIValidator:
         )
 
     def _calculate_confidence_score(
-        self, retrieved_chunks: List[dict], citations: Optional[List[dict]] = None
+        self, retrieved_chunks: List[dict], citations_list: List[CitationSource] = None
     ) -> dict:
         """
-        Calculate confidence score based on evidence.
+        Calculate confidence score based on VALID evidence.
+        
+        Note: This method receives only VALID citations that have been processed and validated.
 
         Returns dict with 'total' score (0-100) and 'reasons' list.
         """
@@ -303,20 +321,20 @@ class AIValidator:
 
             score += similarity_score
 
-        # 3. Citation coverage (up to 20 points)
-        if citations and len(citations) > 0:
-            if len(citations) >= 3:
+        # 3. Citation coverage (up to 20 points) - using VALID citations only
+        if citations_list and len(citations_list) > 0:
+            if len(citations_list) >= 3:
                 citation_score = 20
-                reasons.append(f"Cobertura de citações completa ({len(citations)} citações)")
-            elif len(citations) >= 1:
+                reasons.append(f"Cobertura de citações completa ({len(citations_list)} citações válidas)")
+            elif len(citations_list) >= 1:
                 citation_score = 10
-                reasons.append(f"Cobertura de citações parcial ({len(citations)} citação(ões))")
+                reasons.append(f"Cobertura de citações parcial ({len(citations_list)} citação(ões) válida(s))")
             else:
                 citation_score = 0
-                reasons.append("Sem citações")
+                reasons.append("Sem citações válidas")
         else:
             citation_score = 0
-            reasons.append("Sem citações fornecidas")
+            reasons.append("Sem citações válidas fornecidas")
 
         score += citation_score
 
@@ -381,13 +399,23 @@ class AIValidator:
 
             # Find matching chunk for metadata
             matching_chunk = next(
-                (c for c in retrieved_chunks if c.get("id") == chunk_id), None
+                (c for c in retrieved_chunks if c.get("chunk_id") == chunk_id), None
             )
 
             excerpt = citation.get("text", "")
             if len(excerpt) > self.max_excerpt_length:
                 excerpt = excerpt[: self.max_excerpt_length - 3] + "..."
 
+            # Only add citation if matching chunk exists (validation)
+            if not matching_chunk:
+                logger.warning(f"Citation chunk_id {chunk_id} not found in retrieved chunks")
+                continue
+            
+            # Validate citation belongs to correct document
+            if matching_chunk.get("document_id") != citation.get("document_id"):
+                logger.warning(f"Citation document_id mismatch for chunk_id {chunk_id}")
+                continue
+            
             source = CitationSource(
                 document_id=citation.get("document_id", ""),
                 document_title=citation.get("document_title", document_title),

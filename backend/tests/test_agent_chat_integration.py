@@ -289,4 +289,5 @@ class TestAgentRouterIntegration:
 
         assert response.status_code == 200
         data = response.json()
-        assert "blocked" in data["content"].lower()
+        # When blocked, the response contains the block_reason message
+        assert "não encontrei evidências" in data["content"].lower() or "temporariamente indisponível" in data["content"].lower()

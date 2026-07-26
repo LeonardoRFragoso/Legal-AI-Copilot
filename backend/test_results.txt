@@ -1,0 +1,309 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /home/leonardo/dev/Legal AI Copilot/backend/venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/leonardo/dev/Legal AI Copilot/backend
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.14.2
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 166 items
+
+tests/test_agent_chat_integration.py::TestAgentRouterIntegration::test_summarize_intent_via_chat PASSED [  0%]
+tests/test_agent_chat_integration.py::TestAgentRouterIntegration::test_extract_intent_via_chat PASSED [  1%]
+tests/test_agent_chat_integration.py::TestAgentRouterIntegration::test_risk_intent_via_chat PASSED [  1%]
+tests/test_agent_chat_integration.py::TestAgentRouterIntegration::test_question_answering_via_chat PASSED [  2%]
+tests/test_agent_chat_integration.py::TestAgentRouterIntegration::test_unknown_intent_via_chat PASSED [  3%]
+tests/test_agent_chat_integration.py::TestAgentRouterIntegration::test_document_of_other_user_returns_403 PASSED [  3%]
+tests/test_agent_chat_integration.py::TestAgentRouterIntegration::test_router_decision_no_chain_of_thought PASSED [  4%]
+tests/test_agent_chat_integration.py::TestAgentRouterIntegration::test_blocked_content_not_exposed PASSED [  4%]
+tests/test_agent_router.py::TestAgentIntent::test_intent_values PASSED   [  5%]
+tests/test_agent_router.py::TestRouterDecision::test_decision_creation PASSED [  6%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_router_initialization PASSED [  6%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_summarize_intent PASSED [  7%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_summarize_intent_english PASSED [  7%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_extract_intent PASSED [  8%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_extract_intent_english PASSED [  9%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_compare_intent PASSED [  9%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_compare_intent_english PASSED [ 10%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_risk_intent PASSED [ 10%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_risk_intent_english PASSED [ 11%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_question_intent PASSED [ 12%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_question_intent_english PASSED [ 12%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_unknown_intent PASSED [ 13%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_required_documents_single PASSED [ 13%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_required_documents_multiple PASSED [ 14%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_no_available_documents PASSED [ 15%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_confidence_scores PASSED [ 15%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_reason_provided PASSED [ 16%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_case_insensitive PASSED [ 16%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_whitespace_handling PASSED [ 17%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_multiple_keywords PASSED [ 18%]
+tests/test_agent_router.py::TestLegalAgentRouter::test_risk_keywords_variations PASSED [ 18%]
+tests/test_ai_validator.py::TestCitationSource::test_citation_source_creation PASSED [ 19%]
+tests/test_ai_validator.py::TestCitationSource::test_citation_source_to_dict PASSED [ 19%]
+tests/test_ai_validator.py::TestValidationResult::test_validation_result_creation PASSED [ 20%]
+tests/test_ai_validator.py::TestAIValidator::test_validator_initialization PASSED [ 21%]
+tests/test_ai_validator.py::TestAIValidator::test_validator_custom_thresholds PASSED [ 21%]
+tests/test_ai_validator.py::TestAIValidator::test_validate_empty_response PASSED [ 22%]
+tests/test_ai_validator.py::TestAIValidator::test_validate_no_chunks PASSED [ 22%]
+tests/test_ai_validator.py::TestAIValidator::test_validate_with_good_sources PASSED [ 23%]
+tests/test_ai_validator.py::TestAIValidator::test_confidence_score_bounds PASSED [ 24%]
+tests/test_ai_validator.py::TestAIValidator::test_citation_deduplication PASSED [ 24%]
+tests/test_ai_validator.py::TestAIValidator::test_citation_excerpt_truncation PASSED [ 25%]
+tests/test_ai_validator.py::TestAIValidator::test_confidence_level_high PASSED [ 25%]
+tests/test_ai_validator.py::TestAIValidator::test_confidence_level_moderate PASSED [ 26%]
+tests/test_ai_validator.py::TestAIValidator::test_confidence_level_low PASSED [ 27%]
+tests/test_ai_validator.py::TestAIValidator::test_disclaimer_always_present PASSED [ 27%]
+tests/test_ai_validator.py::TestAIValidator::test_blocked_response_has_no_content PASSED [ 28%]
+tests/test_ai_validator.py::TestAIValidator::test_unblocked_response_has_content PASSED [ 28%]
+tests/test_ai_validator.py::TestAIValidator::test_get_default_validator PASSED [ 29%]
+tests/test_ai_validator.py::TestAIValidator::test_validated_response_to_dict PASSED [ 30%]
+tests/test_analysis_review.py::TestAnalysisRecordModel::test_create_analysis_record PASSED [ 30%]
+tests/test_analysis_review.py::TestAnalysisRecordModel::test_analysis_record_with_structured_data PASSED [ 31%]
+tests/test_analysis_review.py::TestStateTransitions::test_generated_to_pending_review PASSED [ 31%]
+tests/test_analysis_review.py::TestStateTransitions::test_generated_to_approved_invalid PASSED [ 32%]
+tests/test_analysis_review.py::TestStateTransitions::test_pending_review_to_approved PASSED [ 33%]
+tests/test_analysis_review.py::TestStateTransitions::test_pending_review_to_rejected PASSED [ 33%]
+tests/test_analysis_review.py::TestStateTransitions::test_approved_is_terminal PASSED [ 34%]
+tests/test_analysis_review.py::TestStateTransitions::test_needs_changes_to_pending_review PASSED [ 34%]
+tests/test_analysis_review.py::TestStateTransitions::test_rejected_to_pending_review PASSED [ 35%]
+tests/test_analysis_review.py::TestReviewEndpoints::test_list_analyses PASSED [ 36%]
+tests/test_analysis_review.py::TestReviewEndpoints::test_get_analysis_detail PASSED [ 36%]
+tests/test_analysis_review.py::TestReviewEndpoints::test_create_review_approve PASSED [ 37%]
+tests/test_analysis_review.py::TestReviewEndpoints::test_create_review_reject_requires_comment PASSED [ 37%]
+tests/test_analysis_review.py::TestReviewEndpoints::test_create_review_reject_with_comment PASSED [ 38%]
+tests/test_analysis_review.py::TestReviewEndpoints::test_review_history PASSED [ 39%]
+tests/test_analysis_review.py::TestReviewEndpoints::test_invalid_transition PASSED [ 39%]
+tests/test_analysis_review.py::TestReviewEndpoints::test_404_nonexistent_analysis PASSED [ 40%]
+tests/test_analysis_review.py::TestReviewEndpoints::test_unauthenticated_list PASSED [ 40%]
+tests/test_analysis_review.py::TestReviewEndpoints::test_request_changes_flow PASSED [ 41%]
+tests/test_analysis_review.py::TestMetricsEndpoint::test_metrics_returns_data PASSED [ 42%]
+tests/test_analysis_review.py::TestMetricsEndpoint::test_metrics_unauthenticated PASSED [ 42%]
+tests/test_analysis_review.py::TestSystemStatusEnhanced::test_system_status_has_new_fields PASSED [ 43%]
+tests/test_api.py::TestHealthEndpoint::test_health_check PASSED          [ 43%]
+tests/test_api.py::TestDocumentEndpoints::test_list_documents_requires_auth PASSED [ 44%]
+tests/test_api.py::TestDocumentEndpoints::test_list_documents_authenticated PASSED [ 45%]
+tests/test_api.py::TestDocumentEndpoints::test_get_nonexistent_document PASSED [ 45%]
+tests/test_api.py::TestConversationEndpoints::test_list_conversations_requires_auth PASSED [ 46%]
+tests/test_api.py::TestConversationEndpoints::test_list_conversations_authenticated PASSED [ 46%]
+tests/test_api.py::TestAnalysisEndpoints::test_summary_endpoint_requires_auth PASSED [ 47%]
+tests/test_api.py::TestAnalysisEndpoints::test_summary_endpoint_exists PASSED [ 48%]
+tests/test_api.py::TestAnalysisEndpoints::test_extract_endpoint_requires_auth PASSED [ 48%]
+tests/test_api.py::TestAnalysisEndpoints::test_extract_endpoint_exists PASSED [ 49%]
+tests/test_api.py::TestAnalysisEndpoints::test_compare_endpoint_requires_auth PASSED [ 50%]
+tests/test_api.py::TestAnalysisEndpoints::test_compare_endpoint_exists PASSED [ 50%]
+tests/test_auth.py::test_create_access_token PASSED                      [ 51%]
+tests/test_auth.py::test_create_access_token_with_expiration PASSED      [ 51%]
+tests/test_auth.py::test_token_expiration PASSED                         [ 52%]
+tests/test_auth.py::test_invalid_token PASSED                            [ 53%]
+tests/test_auth.py::test_register_user PASSED                            [ 53%]
+tests/test_auth.py::test_register_duplicate_email PASSED                 [ 54%]
+tests/test_auth.py::test_login_success PASSED                            [ 54%]
+tests/test_auth.py::test_login_invalid_password PASSED                   [ 55%]
+tests/test_auth.py::test_login_nonexistent_user PASSED                   [ 56%]
+tests/test_auth.py::test_refresh_token PASSED                            [ 56%]
+tests/test_auth.py::test_logout PASSED                                   [ 57%]
+tests/test_auth.py::test_get_current_user PASSED                         [ 57%]
+tests/test_auth.py::test_protected_endpoint_without_token PASSED         [ 58%]
+tests/test_auth.py::test_protected_endpoint_with_invalid_token PASSED    [ 59%]
+tests/test_auth.py::test_rbac_lawyer_access PASSED                       [ 59%]
+tests/test_auth.py::test_rbac_viewer_cannot_upload PASSED                [ 60%]
+tests/test_auth.py::test_public_registration_cannot_get_admin_role PASSED [ 60%]
+tests/test_auth.py::test_public_registration_cannot_get_lawyer_role PASSED [ 61%]
+tests/test_auth.py::test_public_registration_cannot_get_assistant_role PASSED [ 62%]
+tests/test_automation.py::TestAutomationRunModel::test_create_automation_run PASSED [ 62%]
+tests/test_automation.py::TestAutomationRunModel::test_update_run_status PASSED [ 63%]
+tests/test_automation.py::TestAutomationRunModel::test_complete_run PASSED [ 63%]
+tests/test_automation.py::TestAutomationRunModel::test_fail_run PASSED   [ 64%]
+tests/test_automation.py::TestAutomationEndpoints::test_list_runs_user_sees_own PASSED [ 65%]
+tests/test_automation.py::TestAutomationEndpoints::test_list_runs_admin_sees_all PASSED [ 65%]
+tests/test_automation.py::TestAutomationEndpoints::test_list_runs_filter_by_status PASSED [ 66%]
+tests/test_automation.py::TestAutomationEndpoints::test_get_run_by_id PASSED [ 66%]
+tests/test_automation.py::TestAutomationEndpoints::test_get_run_not_found PASSED [ 67%]
+tests/test_automation.py::TestAutomationEndpoints::test_retry_failed_run PASSED [ 68%]
+tests/test_automation.py::TestAutomationEndpoints::test_retry_non_failed_run PASSED [ 68%]
+tests/test_automation.py::TestAutomationExecution::test_automation_creates_summary_and_risk PASSED [ 69%]
+tests/test_automation.py::TestAutomationExecution::test_automation_webhook_failure_does_not_destroy_results PASSED [ 69%]
+tests/test_automation.py::TestAutomationExecution::test_automation_failed_document_not_found PASSED [ 70%]
+tests/test_automation.py::TestWebhook::test_payload_structure PASSED     [ 71%]
+tests/test_automation.py::TestWebhook::test_payload_no_sensitive_data PASSED [ 71%]
+tests/test_automation.py::TestWebhook::test_webhook_disabled_does_not_send PASSED [ 72%]
+tests/test_automation.py::TestWebhook::test_webhook_no_url_does_not_send PASSED [ 72%]
+tests/test_automation.py::TestWebhook::test_webhook_timeout_handled PASSED [ 73%]
+tests/test_automation.py::TestWebhook::test_webhook_idempotency_key_in_header PASSED [ 74%]
+tests/test_automation.py::TestSystemStatus::test_system_status_admin_only PASSED [ 74%]
+tests/test_automation.py::TestSystemStatus::test_system_status_returns_data PASSED [ 75%]
+tests/test_config.py::test_production_requires_secret_key PASSED         [ 75%]
+tests/test_config.py::test_production_rejects_default_secret_key PASSED  [ 76%]
+tests/test_config.py::test_production_requires_minimum_secret_key_length PASSED [ 77%]
+tests/test_config.py::test_production_accepts_valid_secret_key PASSED    [ 77%]
+tests/test_config.py::test_development_allows_missing_secret_key PASSED  [ 78%]
+tests/test_config.py::test_testing_allows_missing_secret_key PASSED      [ 78%]
+tests/test_demo_smoke.py::TestDemoSmoke::test_full_demo_flow PASSED      [ 79%]
+tests/test_demo_smoke.py::TestDemoSmoke::test_blocked_analysis_cannot_be_approved PASSED [ 80%]
+tests/test_demo_smoke.py::TestDemoSmoke::test_rbac_assistant_cannot_review PASSED [ 80%]
+tests/test_risk_analysis.py::TestRiskSeverity::test_severity_values PASSED [ 81%]
+tests/test_risk_analysis.py::TestRiskCategory::test_category_values PASSED [ 81%]
+tests/test_risk_analysis.py::TestContractRisk::test_risk_creation PASSED [ 82%]
+tests/test_risk_analysis.py::TestContractRisk::test_risk_to_dict PASSED  [ 83%]
+tests/test_risk_analysis.py::TestHeuristicAnalyzer::test_analyzer_initialization PASSED [ 83%]
+tests/test_risk_analysis.py::TestHeuristicAnalyzer::test_analyze_nonexistent_document PASSED [ 84%]
+tests/test_risk_analysis.py::TestHeuristicAnalyzer::test_analyze_document_without_chunks PASSED [ 84%]
+tests/test_risk_analysis.py::TestHeuristicAnalyzer::test_detect_missing_confidentiality PASSED [ 85%]
+tests/test_risk_analysis.py::TestHeuristicAnalyzer::test_detect_missing_lgpd PASSED [ 86%]
+tests/test_risk_analysis.py::TestHeuristicAnalyzer::test_detect_unlimited_penalty PASSED [ 86%]
+tests/test_risk_analysis.py::TestHeuristicAnalyzer::test_detect_automatic_renewal PASSED [ 87%]
+tests/test_risk_analysis.py::TestRiskAnalyzer::test_analyzer_initialization PASSED [ 87%]
+tests/test_risk_analysis.py::TestRiskAnalyzer::test_analyze_nonexistent_document PASSED [ 88%]
+tests/test_risk_analysis.py::TestRiskAnalyzer::test_analyze_document_without_chunks PASSED [ 89%]
+tests/test_risk_analysis.py::TestRiskAnalyzer::test_analyze_simple_contract PASSED [ 89%]
+tests/test_risk_analysis.py::TestRiskAnalyzer::test_analyze_complex_contract PASSED [ 90%]
+tests/test_risk_analysis.py::TestRiskAnalyzer::test_overall_risk_calculation PASSED [ 90%]
+tests/test_risk_analysis.py::TestRiskAnalyzer::test_confidence_score_calculation PASSED [ 91%]
+tests/test_risk_analysis.py::TestRiskAnalyzer::test_summary_generation PASSED [ 92%]
+tests/test_risk_analysis.py::TestRiskAnalyzer::test_result_to_dict PASSED [ 92%]
+tests/test_validators.py::TestExtractionValidator::test_valid_extraction PASSED [ 93%]
+tests/test_validators.py::TestExtractionValidator::test_missing_fields PASSED [ 93%]
+tests/test_validators.py::TestExtractionValidator::test_empty_extraction PASSED [ 94%]
+tests/test_validators.py::TestSummaryValidator::test_valid_summary PASSED [ 95%]
+tests/test_validators.py::TestSummaryValidator::test_empty_summary PASSED [ 95%]
+tests/test_validators.py::TestSummaryValidator::test_short_summary PASSED [ 96%]
+tests/test_validators.py::TestChatResponseValidator::test_valid_response PASSED [ 96%]
+tests/test_validators.py::TestChatResponseValidator::test_empty_response PASSED [ 97%]
+tests/test_validators.py::TestChatResponseValidator::test_uncertain_response PASSED [ 98%]
+tests/test_validators.py::TestConfidenceValidator::test_confident_response PASSED [ 98%]
+tests/test_validators.py::TestConfidenceValidator::test_uncertain_response PASSED [ 99%]
+tests/test_validators.py::TestConfidenceValidator::test_low_confidence_response PASSED [100%]
+
+=============================== warnings summary ===============================
+app/database.py:15
+  /home/leonardo/dev/Legal AI Copilot/backend/app/database.py:15: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+venv/lib/python3.12/site-packages/pypdf/_crypt_providers/_cryptography.py:32
+  /home/leonardo/dev/Legal AI Copilot/backend/venv/lib/python3.12/site-packages/pypdf/_crypt_providers/_cryptography.py:32: CryptographyDeprecationWarning: ARC4 has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.ARC4 and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+    from cryptography.hazmat.primitives.ciphers.algorithms import AES, ARC4
+
+venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:271
+venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:271
+venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:271
+venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:271
+venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:271
+venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:271
+venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:271
+venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:271
+venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:271
+  /home/leonardo/dev/Legal AI Copilot/backend/venv/lib/python3.12/site-packages/pydantic/_internal/_config.py:271: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+venv/lib/python3.12/site-packages/pydantic/_internal/_fields.py:149
+  /home/leonardo/dev/Legal AI Copilot/backend/venv/lib/python3.12/site-packages/pydantic/_internal/_fields.py:149: UserWarning: Field "model_name" has conflict with protected namespace "model_".
+  
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+venv/lib/python3.12/site-packages/passlib/utils/__init__.py:854
+  /home/leonardo/dev/Legal AI Copilot/backend/venv/lib/python3.12/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
+    from crypt import crypt as _crypt
+
+venv/lib/python3.12/site-packages/langchain_core/utils/function_calling.py:79
+venv/lib/python3.12/site-packages/langchain_core/utils/function_calling.py:79
+venv/lib/python3.12/site-packages/langchain_core/utils/function_calling.py:79
+venv/lib/python3.12/site-packages/langchain_core/utils/function_calling.py:79
+  /home/leonardo/dev/Legal AI Copilot/backend/venv/lib/python3.12/site-packages/langchain_core/utils/function_calling.py:79: PydanticDeprecatedSince20: The `schema` method is deprecated; use `model_json_schema` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    schema = dereference_refs(model.schema())
+
+venv/lib/python3.12/site-packages/pydantic/main.py:1223
+venv/lib/python3.12/site-packages/pydantic/main.py:1223
+venv/lib/python3.12/site-packages/pydantic/main.py:1223
+venv/lib/python3.12/site-packages/pydantic/main.py:1223
+  /home/leonardo/dev/Legal AI Copilot/backend/venv/lib/python3.12/site-packages/pydantic/main.py:1223: PydanticDeprecatedSince20: The `schema` method is deprecated; use `model_json_schema` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    warnings.warn('The `schema` method is deprecated; use `model_json_schema` instead.', DeprecationWarning)
+
+tests/test_agent_chat_integration.py::TestAgentRouterIntegration::test_summarize_intent_via_chat
+  /home/leonardo/dev/Legal AI Copilot/backend/venv/lib/python3.12/site-packages/passlib/handlers/argon2.py:716: DeprecationWarning: Accessing argon2.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for argon2-cffi's packaging metadata.
+    _argon2_cffi.__version__, max_version)
+
+tests/test_agent_chat_integration.py: 59 warnings
+tests/test_analysis_review.py: 70 warnings
+tests/test_api.py: 12 warnings
+tests/test_auth.py: 30 warnings
+tests/test_automation.py: 98 warnings
+tests/test_demo_smoke.py: 26 warnings
+tests/test_risk_analysis.py: 50 warnings
+  /home/leonardo/dev/Legal AI Copilot/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/schema.py:3593: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore
+
+tests/test_agent_chat_integration.py: 7 warnings
+tests/test_analysis_review.py: 11 warnings
+tests/test_api.py: 6 warnings
+tests/test_auth.py: 8 warnings
+tests/test_automation.py: 9 warnings
+tests/test_demo_smoke.py: 4 warnings
+  /home/leonardo/dev/Legal AI Copilot/backend/app/auth.py:35: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+
+tests/test_agent_chat_integration.py: 42 warnings
+tests/test_analysis_review.py: 32 warnings
+tests/test_api.py: 2 warnings
+tests/test_automation.py: 88 warnings
+tests/test_demo_smoke.py: 10 warnings
+  /home/leonardo/dev/Legal AI Copilot/backend/app/logger.py:13: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "timestamp": datetime.utcnow().isoformat(),
+
+tests/test_analysis_review.py::TestReviewEndpoints::test_create_review_approve
+tests/test_analysis_review.py::TestReviewEndpoints::test_create_review_reject_with_comment
+tests/test_analysis_review.py::TestReviewEndpoints::test_review_history
+tests/test_analysis_review.py::TestReviewEndpoints::test_request_changes_flow
+tests/test_analysis_review.py::TestReviewEndpoints::test_request_changes_flow
+tests/test_demo_smoke.py::TestDemoSmoke::test_full_demo_flow
+  /home/leonardo/dev/Legal AI Copilot/backend/app/analysis_record_service.py:226: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    record.updated_at = datetime.utcnow()
+
+tests/test_auth.py::test_create_access_token_with_expiration
+tests/test_auth.py::test_token_expiration
+  /home/leonardo/dev/Legal AI Copilot/backend/app/auth.py:33: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    expire = datetime.utcnow() + expires_delta
+
+tests/test_auth.py::test_login_success
+tests/test_auth.py::test_refresh_token
+tests/test_auth.py::test_logout
+tests/test_auth.py::test_get_current_user
+tests/test_auth.py::test_rbac_lawyer_access
+tests/test_auth.py::test_rbac_viewer_cannot_upload
+  /home/leonardo/dev/Legal AI Copilot/backend/app/repositories.py:38: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    user.last_login = datetime.utcnow()
+
+tests/test_auth.py::test_login_success
+tests/test_auth.py::test_refresh_token
+tests/test_auth.py::test_refresh_token
+tests/test_auth.py::test_logout
+tests/test_auth.py::test_get_current_user
+tests/test_auth.py::test_rbac_lawyer_access
+tests/test_auth.py::test_rbac_viewer_cannot_upload
+  /home/leonardo/dev/Legal AI Copilot/backend/app/auth.py:43: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+
+tests/test_automation.py::TestAutomationRunModel::test_update_run_status
+tests/test_automation.py::TestAutomationExecution::test_automation_creates_summary_and_risk
+tests/test_automation.py::TestAutomationExecution::test_automation_webhook_failure_does_not_destroy_results
+tests/test_automation.py::TestAutomationExecution::test_automation_failed_document_not_found
+  /home/leonardo/dev/Legal AI Copilot/backend/app/automation_service.py:91: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    run.started_at = datetime.utcnow()
+
+tests/test_automation.py: 25 warnings
+  /home/leonardo/dev/Legal AI Copilot/backend/app/automation_service.py:93: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    run.updated_at = datetime.utcnow()
+
+tests/test_automation.py::TestAutomationRunModel::test_complete_run
+tests/test_automation.py::TestAutomationRunModel::test_fail_run
+tests/test_automation.py::TestAutomationEndpoints::test_list_runs_filter_by_status
+tests/test_automation.py::TestAutomationEndpoints::test_retry_failed_run
+tests/test_automation.py::TestAutomationExecution::test_automation_creates_summary_and_risk
+tests/test_automation.py::TestAutomationExecution::test_automation_webhook_failure_does_not_destroy_results
+tests/test_automation.py::TestAutomationExecution::test_automation_failed_document_not_found
+tests/test_automation.py::TestSystemStatus::test_system_status_returns_data
+  /home/leonardo/dev/Legal AI Copilot/backend/app/automation_service.py:88: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    run.completed_at = datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+====================== 166 passed, 644 warnings in 19.37s ======================

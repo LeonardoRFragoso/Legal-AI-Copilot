@@ -311,34 +311,31 @@ class LegalAgent:
             )
     
     def query(self, query: str, chat_history: list = None, document_id: str = None) -> dict:
+        """
+        Execute a query using the LangChain agent.
+        
+        Note: Citations are NOT extracted here. They are built from the RAG chunks
+        in the RAGService and passed to the validator. This ensures citations
+        are always traceable to actual retrieved chunks.
+        
+        Args:
+            query: The user query (may include context from RAGService.build_context)
+            chat_history: Previous messages in the conversation
+            document_id: Optional document ID for context
+            
+        Returns:
+            Dict with 'response' key containing the LLM output
+        """
         if not self.agent_executor:
             raise ValueError("OPENAI_API_KEY not configured")
         if chat_history is None:
             chat_history = []
         
-        # Add document context to the input if document_id is provided
-        input_text = query
-        if document_id:
-            input_text = f"[Document ID: {document_id}] {query}"
-        
         result = self.agent_executor.invoke({
-            "input": input_text,
+            "input": query,
             "chat_history": chat_history
         })
         
         return {
-            "response": result["output"],
-            "citations": self._extract_citations(result)
+            "response": result["output"]
         }
-    
-    def _extract_citations(self, result: dict) -> list:
-        # Extract citations from the agent's output
-        citations = []
-        output = result.get("output", "")
-        
-        # Simple extraction - in production, use more sophisticated parsing
-        if "Document:" in output or "Page:" in output:
-            # This is a placeholder - implement proper citation extraction
-            citations.append({"source": "document", "text": output[:200]})
-        
-        return citations
