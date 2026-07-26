@@ -32,6 +32,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install --no-cache-dir -r requirements.txt
     
+    - name: Verify installation
+      run: |
+        cd backend
+        python -c "import pytest; import langchain; import openai; print('All imports successful')"
+    
     - name: Run tests
       run: |
         cd backend
