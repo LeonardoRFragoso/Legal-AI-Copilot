@@ -26,7 +26,38 @@ class SearchTool(BaseTool):
     description = "Search for relevant chunks in the document database using semantic search"
     args_schema: Type[BaseModel] = SearchInput
     
+    # Configuration
+    TOP_K = 5
+    MIN_SIMILARITY_SCORE = 0.3
+    
     def _run(self, query: str, document_id: Optional[str] = None) -> str:
+        """
+        Execute semantic search and return human-readable results.
+        
+        Note: This method returns a formatted string for LLM consumption.
+        For structured data with real similarity scores, use _run_structured().
+        """
+        structured_results = self._run_structured(query, document_id)
+        
+        if not structured_results:
+            return "Nenhuma informação relevante encontrada nos documentos. Por favor, tente reformular sua pergunta."
+        
+        output = "Relevant chunks found:\n\n"
+        for i, r in enumerate(structured_results, 1):
+            output += f"{i}. Document: {r['document_title']}, Page: {r['page_number']}\n"
+            output += f"   Similarity: {r['similarity_score']:.2f}\n"
+            output += f"   {r['text'][:500]}...\n\n"
+        
+        return output
+    
+    def _run_structured(self, query: str, document_id: Optional[str] = None) -> list:
+        """
+        Execute semantic search and return structured results with real similarity scores.
+        
+        Returns:
+            List of dicts with: chunk_id, document_id, document_title, page_number, 
+                               text, similarity_score
+        """
         db = SessionLocal()
         try:
             from app.embedding_service import EmbeddingService
@@ -42,13 +73,13 @@ class SearchTool(BaseTool):
             
             query_embedding = embedding_service.generate_embedding(query)
             
-            # Simple cosine similarity search
-            embeddings = db.query(DocumentEmbedding)
+            # Retrieve embeddings from database
+            embeddings_query = db.query(DocumentEmbedding)
             
             if actual_document_id:
-                embeddings = embeddings.filter(DocumentEmbedding.document_id == actual_document_id)
+                embeddings_query = embeddings_query.filter(DocumentEmbedding.document_id == actual_document_id)
             
-            embeddings = embeddings.all()
+            embeddings = embeddings_query.all()
             
             results = []
             for emb in embeddings:
@@ -61,25 +92,22 @@ class SearchTool(BaseTool):
                         continue
                     
                     similarity = self._cosine_similarity(query_embedding, stored_embedding)
-                    results.append({
-                        "text": emb.chunk.text,
-                        "document": emb.chunk.document.title,
-                        "page": emb.chunk.page_number,
-                        "similarity": similarity
-                    })
+                    
+                    # Apply threshold
+                    if similarity >= self.MIN_SIMILARITY_SCORE:
+                        results.append({
+                            "chunk_id": emb.chunk_id,
+                            "document_id": emb.chunk.document.id,
+                            "document_title": emb.chunk.document.title,
+                            "page_number": emb.chunk.page_number,
+                            "text": emb.chunk.text,
+                            "similarity_score": float(similarity)
+                        })
             
-            results.sort(key=lambda x: x["similarity"], reverse=True)
-            top_results = results[:5]
+            # Sort by similarity descending and limit to TOP_K
+            results.sort(key=lambda x: x["similarity_score"], reverse=True)
+            return results[:self.TOP_K]
             
-            if not top_results:
-                return "Nenhuma informação relevante encontrada nos documentos. Por favor, tente reformular sua pergunta."
-            
-            output = "Relevant chunks found:\n\n"
-            for i, r in enumerate(top_results, 1):
-                output += f"{i}. Document: {r['document']}, Page: {r['page']}\n"
-                output += f"   {r['text'][:500]}...\n\n"
-            
-            return output
         finally:
             db.close()
     

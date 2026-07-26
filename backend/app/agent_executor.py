@@ -182,28 +182,34 @@ def execute_question_answering(
     })
 
     try:
+        # Execute RAG query
         result = legal_agent.query(query, chat_history, document_id)
 
         # Validate with guardrails
         validator = AIValidator.get_default_validator()
 
+        # Retrieve chunks using real semantic search
         retrieved_chunks = []
         if document_id:
-            doc = db.query(Document).filter(Document.id == document_id).first()
-            if doc:
-                chunks = db.query(Chunk).filter(Chunk.document_id == document_id).all()
-                for chunk in chunks:
-                    embedding = db.query(DocumentEmbedding).filter(
-                        DocumentEmbedding.chunk_id == chunk.id
-                    ).first()
-                    retrieved_chunks.append({
-                        "id": chunk.id,
-                        "text": chunk.text,
-                        "page_number": chunk.page_number,
-                        "similarity_score": 0.5,
-                        "document_id": doc.id,
-                        "document_title": doc.title,
-                    })
+            # Use SearchTool's structured method to get real similarity scores
+            search_tool = legal_agent.tools[0]  # SearchTool is first
+            if hasattr(search_tool, '_run_structured'):
+                structured_results = search_tool._run_structured(query, document_id)
+                retrieved_chunks = structured_results
+            else:
+                # Fallback: retrieve all chunks with placeholder scores
+                doc = db.query(Document).filter(Document.id == document_id).first()
+                if doc:
+                    chunks = db.query(Chunk).filter(Chunk.document_id == document_id).all()
+                    for chunk in chunks:
+                        retrieved_chunks.append({
+                            "id": chunk.id,
+                            "text": chunk.text,
+                            "page_number": chunk.page_number,
+                            "similarity_score": 0.0,  # Unknown score
+                            "document_id": doc.id,
+                            "document_title": doc.title,
+                        })
 
         citations_data = []
         if result.get("citations"):
@@ -221,7 +227,9 @@ def execute_question_answering(
         duration_ms = int((time.time() - start) * 1000)
         logger.info("agent_tool_completed", extra={
             "tool": "semantic_search", "document_id": document_id or "none",
-            "duration_ms": duration_ms, "blocked": validated.blocked
+            "duration_ms": duration_ms, "blocked": validated.blocked,
+            "chunks_retrieved": len(retrieved_chunks),
+            "confidence_score": validated.validation.confidence_score
         })
 
         final_content = validated.content if not validated.blocked else validated.block_reason
@@ -247,19 +255,27 @@ def execute_question_answering(
             "tool": "semantic_search", "duration_ms": duration_ms, "error_type": "ValueError"
         })
         return {
-            "content": f"OPENAI_API_KEY não configurada. Mensagem recebida: {query}",
+            "content": "O serviço de Inteligência Artificial está temporariamente indisponível.",
             "structured_data": None,
             "validation": None,
             "citations": [],
-            "blocked": False,
-            "error": None,
+            "blocked": True,
+            "error": "AI_PROVIDER_NOT_CONFIGURED",
         }
     except Exception as e:
         duration_ms = int((time.time() - start) * 1000)
         logger.error("agent_tool_failed", extra={
-            "tool": "semantic_search", "duration_ms": duration_ms, "error_type": type(e).__name__
+            "tool": "semantic_search", "duration_ms": duration_ms, "error_type": type(e).__name__,
+            "error_message": str(e)
         })
-        return {"content": "", "structured_data": None, "error": str(e)}
+        return {
+            "content": "Erro ao processar sua pergunta. Tente novamente.",
+            "structured_data": None,
+            "validation": None,
+            "citations": [],
+            "blocked": True,
+            "error": str(e)
+        }
 
 
 def execute_agent_decision(
