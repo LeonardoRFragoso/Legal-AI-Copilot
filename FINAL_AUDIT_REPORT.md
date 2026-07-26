@@ -105,7 +105,7 @@ O Legal AI Copilot MVP foi submetido a uma auditoria completa por execução rea
 ### 1. Configurar API Key
 ```bash
 cd backend
-export OPENAI_API_KEY="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"
+export OPENAI_API_KEY="your-openai-api-key-here"
 ```
 
 ### 2. Iniciar Backend
