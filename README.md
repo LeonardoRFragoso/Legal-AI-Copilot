@@ -142,9 +142,11 @@ ENVIRONMENT=testing ./venv/bin/python -m pytest -v
 
 ## Test Status
 
-- **166 tests passed, 0 failed**
-- Duração: ~38s
+- **176 tests passed, 0 failed, 0 skipped**
+- Duração: ~18s
 - Cobertura: auth, RBAC, agent router, risk analysis, validators, automation, analysis records, reviews, metrics, smoke test
+
+> **Nota sobre CI:** O CI do GitHub Actions atualmente falha na etapa de instalação de dependências devido a `pyjwt==2.8.1` (versão yanked do PyPI). Os testes do produto passam localmente. A correção é trivial: atualizar para `pyjwt>=2.8.0`.
 
 ## Segurança
 
