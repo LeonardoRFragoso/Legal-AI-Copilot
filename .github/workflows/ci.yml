@@ -39,7 +39,7 @@ jobs:
         python -m pytest tests/ -v --tb=short
       env:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY || 'test-key-for-ci' }}
-        DATABASE_URL: sqlite:///./test.db
+        DATABASE_URL: sqlite+aiosqlite:///./test.db
         ENVIRONMENT: testing
         PYTHONUNBUFFERED: 1
 
